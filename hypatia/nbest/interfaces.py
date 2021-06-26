@@ -1,5 +1,6 @@
 from zope.interface import Interface
 
+
 class INBest(Interface):
     """Interface for an N-Best chooser."""
 
@@ -49,4 +50,3 @@ class INBest(Interface):
 
         This is N (the value passed to the constructor).
         """
-

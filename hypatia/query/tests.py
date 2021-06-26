@@ -1,28 +1,32 @@
 import unittest
 
+
 def _skip_on_Python_3_2(func):
     import sys
-    if sys.version_info[:2] == (3, 2): #pragma NO COVER
+
+    if sys.version_info[:2] == (3, 2):  # pragma NO COVER
+
         def _skip(self):
             pass
+
         return _skip
     return func
 
 
 class ComparatorTestBase(unittest.TestCase):
-
     def _makeOne(self, index, value):
         return self._getTargetClass()(index, value)
 
 
 class TestQuery(unittest.TestCase):
-
     def _makeOne(self):
         from . import Query as cls
+
         return cls()
 
     def test_and(self):
         from . import And
+
         a = self._makeOne()
         b = self._makeOne()
         result = a & b
@@ -32,16 +36,17 @@ class TestQuery(unittest.TestCase):
 
     def test_and_query_should_not_change_after_optimize(self):
         from . import And, Or, Eq, Any
-        states_query = Or(Eq('states', 'published'), Eq('states', 'archived'))
-        query = And(states_query, Eq('content_types', 'event'))
+
+        states_query = Or(Eq("states", "published"), Eq("states", "archived"))
+        query = And(states_query, Eq("content_types", "event"))
         op = query._optimize()
         self.assertTrue(isinstance(op, And))
         self.assertTrue(isinstance(op.queries[0], Any))
         self.assertTrue(isinstance(op.queries[1], Eq))
-        self.assertEqual(op.queries[0].index, 'states')
-        self.assertEqual(op.queries[0]._value, ['published', 'archived'])
-        self.assertEqual(op.queries[1].index, 'content_types')
-        self.assertEqual(op.queries[1]._value, 'event')
+        self.assertEqual(op.queries[0].index, "states")
+        self.assertEqual(op.queries[0]._value, ["published", "archived"])
+        self.assertEqual(op.queries[1].index, "content_types")
+        self.assertEqual(op.queries[1]._value, "event")
         # and_query should not have been modified
         # this is needed because query optimization can be more aggressive than
         # just replace Or(Eq, Eq) by Any. Here is an example:
@@ -56,16 +61,17 @@ class TestQuery(unittest.TestCase):
 
     def test_or_query_should_not_change_after_optimize(self):
         from . import And, Or, Eq, All
-        states_query = And(Eq('states', 'published'), Eq('states', 'archived'))
-        query = Or(states_query, Eq('content_types', 'event'))
+
+        states_query = And(Eq("states", "published"), Eq("states", "archived"))
+        query = Or(states_query, Eq("content_types", "event"))
         op = query._optimize()
         self.assertTrue(isinstance(op, Or))
         self.assertTrue(isinstance(op.queries[0], All))
         self.assertTrue(isinstance(op.queries[1], Eq))
-        self.assertEqual(op.queries[0].index, 'states')
-        self.assertEqual(op.queries[0]._value, ['published', 'archived'])
-        self.assertEqual(op.queries[1].index, 'content_types')
-        self.assertEqual(op.queries[1]._value, 'event')
+        self.assertEqual(op.queries[0].index, "states")
+        self.assertEqual(op.queries[0]._value, ["published", "archived"])
+        self.assertEqual(op.queries[1].index, "content_types")
+        self.assertEqual(op.queries[1]._value, "event")
         self.assertTrue(isinstance(query.queries[0], And))
         self.assertTrue(isinstance(query.queries[1], Eq))
 
@@ -75,6 +81,7 @@ class TestQuery(unittest.TestCase):
 
     def test_or(self):
         from . import Or
+
         a = self._makeOne()
         b = self._makeOne()
         result = a | b
@@ -94,7 +101,6 @@ class TestQuery(unittest.TestCase):
         from . import Query
 
         class Derived(Query):
-
             def __init__(self, name):
                 self.name = name
                 self.children = []
@@ -106,496 +112,523 @@ class TestQuery(unittest.TestCase):
                 return self.children
 
         import sys
-        if sys.version_info[0] >= 3: #pragma NO COVER
+
+        if sys.version_info[0] >= 3:  # pragma NO COVER
             from io import StringIO
-        else: #pragma NO COVER
+        else:  # pragma NO COVER
             from io import BytesIO as StringIO
-        a = Derived('A')
-        b = Derived('B')
-        c = Derived('C')
+        a = Derived("A")
+        b = Derived("B")
+        c = Derived("C")
         a.children.append(b)
         a.children.append(c)
 
         buf = StringIO()
         a.print_tree(buf)
-        self.assertEqual(buf.getvalue(), 'A\n  B\n  C\n')
+        self.assertEqual(buf.getvalue(), "A\n  B\n  C\n")
 
 
 class TestComparator(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import Comparator
+
         return Comparator
 
     def test_ctor(self):
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.index, 'index')
-        self.assertEqual(inst._value, 'val')
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.index, "index")
+        self.assertEqual(inst._value, "val")
 
     def test_eq(self):
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst, self._makeOne('index', 'val'))
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst, self._makeOne("index", "val"))
 
     def test_execute(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         rs = inst.execute()
-        self.assertEqual(rs['query'], inst)
-        self.assertEqual(rs['names'], None)
-        self.assertEqual(rs['resolver'], None)
+        self.assertEqual(rs["query"], inst)
+        self.assertEqual(rs["names"], None)
+        self.assertEqual(rs["resolver"], None)
 
     def test_flush(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         inst.flush(True)
         self.assertEqual(index.flushed, True)
 
     def test_execute_withargs(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
-        rs = inst.execute(optimize=False, names={'a':1}, resolver=True)
-        self.assertEqual(rs['query'], inst)
-        self.assertEqual(rs['names'], {'a':1})
-        self.assertEqual(rs['resolver'], True)
+        inst = self._makeOne(index, "val")
+        rs = inst.execute(optimize=False, names={"a": 1}, resolver=True)
+        self.assertEqual(rs["query"], inst)
+        self.assertEqual(rs["names"], {"a": 1})
+        self.assertEqual(rs["resolver"], True)
+
 
 class TestContains(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import Contains
+
         return Contains
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.contains, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.contains, "val")
 
     def test_apply_w_name(self):
         from . import Name
+
         index = DummyIndex()
-        inst = self._makeOne(index, Name('foo'))
-        result = inst._apply({'foo': 'val'})
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.contains, 'val')
+        inst = self._makeOne(index, Name("foo"))
+        result = inst._apply({"foo": "val"})
+        self.assertEqual(result, "val")
+        self.assertEqual(index.contains, "val")
 
     def test_apply_w_missing_name(self):
         from . import Name
+
         index = DummyIndex()
-        inst = self._makeOne(index, Name('foo'))
+        inst = self._makeOne(index, Name("foo"))
         self.assertRaises(NameError, inst._apply, {})
 
     def test_to_str(self):
-        inst = self._makeOne('index', 'val')
+        inst = self._makeOne("index", "val")
         self.assertEqual(str(inst), "'val' in index")
 
     def test_negate(self):
         from . import NotContains
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), NotContains('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), NotContains("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import NotContains
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, NotContains('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, NotContains("index", "val"))
 
 
 class TestNotContains(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import NotContains
+
         return NotContains
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.not_contains, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.not_contains, "val")
 
     def test_to_str(self):
-        inst = self._makeOne('index', 'val')
+        inst = self._makeOne("index", "val")
         self.assertEqual(str(inst), "'val' not in index")
 
     def test_negate(self):
         from . import Contains
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), Contains('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), Contains("index", "val"))
 
 
 class TestEq(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import Eq
+
         return Eq
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.eq, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.eq, "val")
 
     def test_to_str(self):
-        index = DummyIndex('index')
-        inst = self._makeOne(index, 'val')
+        index = DummyIndex("index")
+        inst = self._makeOne(index, "val")
         self.assertEqual(str(inst), "index == 'val'")
 
     def test_negate(self):
         from . import NotEq
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), NotEq('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), NotEq("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import NotEq
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, NotEq('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, NotEq("index", "val"))
 
 
 class TestNotEq(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import NotEq
+
         return NotEq
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.not_eq, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.not_eq, "val")
 
     def test_to_str(self):
-        index = DummyIndex('index')
-        inst = self._makeOne(index, 'val')
+        index = DummyIndex("index")
+        inst = self._makeOne(index, "val")
         self.assertEqual(str(inst), "index != 'val'")
 
     def test_negate(self):
         from . import Eq
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), Eq('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), Eq("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import Eq
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, Eq('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, Eq("index", "val"))
 
 
 class TestGt(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import Gt
+
         return Gt
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.gt, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.gt, "val")
 
     def test_to_str(self):
-        index = DummyIndex('index')
-        inst = self._makeOne(index, 'val')
+        index = DummyIndex("index")
+        inst = self._makeOne(index, "val")
         self.assertEqual(str(inst), "index > 'val'")
 
     def test_negate(self):
         from . import Le
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), Le('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), Le("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import Ge
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, Ge('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, Ge("index", "val"))
 
 
 class TestLt(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import Lt
+
         return Lt
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.lt, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.lt, "val")
 
     def test_to_str(self):
-        index = DummyIndex('index')
-        inst = self._makeOne(index, 'val')
+        index = DummyIndex("index")
+        inst = self._makeOne(index, "val")
         self.assertEqual(str(inst), "index < 'val'")
 
     def test_negate(self):
         from . import Ge
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), Ge('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), Ge("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import Ge
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, Ge('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, Ge("index", "val"))
 
 
 class TestGe(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import Ge
+
         return Ge
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.ge, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.ge, "val")
 
     def test_to_str(self):
-        index = DummyIndex('index')
-        inst = self._makeOne(index, 'val')
+        index = DummyIndex("index")
+        inst = self._makeOne(index, "val")
         self.assertEqual(str(inst), "index >= 'val'")
 
     def test_negate(self):
         from . import Lt
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), Lt('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), Lt("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import Lt
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, Lt('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, Lt("index", "val"))
 
 
 class TestLe(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import Le
+
         return Le
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.le, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.le, "val")
 
     def test_to_str(self):
-        index = DummyIndex('index')
-        inst = self._makeOne(index, 'val')
+        index = DummyIndex("index")
+        inst = self._makeOne(index, "val")
         self.assertEqual(str(inst), "index <= 'val'")
 
     def test_negate(self):
         from . import Gt
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), Gt('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), Gt("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import Lt
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, Lt('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, Lt("index", "val"))
 
 
 class TestAll(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import All
+
         return All
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.all, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.all, "val")
 
     def test_to_str(self):
-        inst = self._makeOne('index', [1, 2, 3])
+        inst = self._makeOne("index", [1, 2, 3])
         self.assertEqual(str(inst), "index in all([1, 2, 3])")
 
     def test_negate(self):
         from . import NotAll
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), NotAll('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), NotAll("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import Any
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, Any('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, Any("index", "val"))
 
 
 class TestNotAll(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import NotAll
+
         return NotAll
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.all, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.all, "val")
 
     def test_to_str(self):
-        inst = self._makeOne('index', [1, 2, 3])
+        inst = self._makeOne("index", [1, 2, 3])
         self.assertEqual(str(inst), "index not in all([1, 2, 3])")
 
     def test_negate(self):
         from . import All
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), All('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), All("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import Any
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, Any('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, Any("index", "val"))
 
 
 class TestAny(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import Any
+
         return Any
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.any, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.any, "val")
 
     def test_apply_with_list(self):
         index = DummyIndex()
-        inst = self._makeOne(index, ['one', 'two'])
+        inst = self._makeOne(index, ["one", "two"])
         result = inst._apply(None)
-        self.assertEqual(result, ['one', 'two'])
-        self.assertEqual(index.any, ['one', 'two'])
+        self.assertEqual(result, ["one", "two"])
+        self.assertEqual(index.any, ["one", "two"])
 
     def test_apply_with_tuple(self):
         index = DummyIndex()
-        inst = self._makeOne(index, ('one', 'two'))
+        inst = self._makeOne(index, ("one", "two"))
         result = inst._apply(None)
-        self.assertEqual(result, ('one', 'two'))
-        self.assertEqual(index.any, ('one', 'two'))
-        
+        self.assertEqual(result, ("one", "two"))
+        self.assertEqual(index.any, ("one", "two"))
+
     def test_apply_with_names(self):
         from . import Name
+
         index = DummyIndex()
-        inst = self._makeOne(index, [Name('foo'), Name('bar')])
-        result = inst._apply(names={'foo': 'one', 'bar': 'two'})
-        self.assertEqual(result, ['one', 'two'])
-        self.assertEqual(index.any, ['one', 'two'])
+        inst = self._makeOne(index, [Name("foo"), Name("bar")])
+        result = inst._apply(names={"foo": "one", "bar": "two"})
+        self.assertEqual(result, ["one", "two"])
+        self.assertEqual(index.any, ["one", "two"])
 
     def test_apply_with_names_in_tuple(self):
         from . import Name
+
         index = DummyIndex()
-        inst = self._makeOne(index, (Name('foo'), Name('bar')))
-        result = inst._apply(names={'foo': 'one', 'bar': 'two'})
-        self.assertEqual(result, ('one', 'two'))
-        self.assertEqual(index.any, ('one', 'two'))
+        inst = self._makeOne(index, (Name("foo"), Name("bar")))
+        result = inst._apply(names={"foo": "one", "bar": "two"})
+        self.assertEqual(result, ("one", "two"))
+        self.assertEqual(index.any, ("one", "two"))
 
     def test_to_str(self):
-        inst = self._makeOne('index', [1, 2, 3])
+        inst = self._makeOne("index", [1, 2, 3])
         self.assertEqual(str(inst), "index in any([1, 2, 3])")
 
     def test_negate(self):
         from . import NotAny
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), NotAny('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), NotAny("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import NotAny
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, NotAny('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, NotAny("index", "val"))
 
 
 class TestNotAny(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import NotAny
+
         return NotAny
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'val')
+        inst = self._makeOne(index, "val")
         result = inst._apply(None)
-        self.assertEqual(result, 'val')
-        self.assertEqual(index.not_any, 'val')
+        self.assertEqual(result, "val")
+        self.assertEqual(index.not_any, "val")
 
     def test_to_str(self):
-        inst = self._makeOne('index', [1, 2, 3])
+        inst = self._makeOne("index", [1, 2, 3])
         self.assertEqual(str(inst), "index not in any([1, 2, 3])")
 
     def test_negate(self):
         from . import Any
-        inst = self._makeOne('index', 'val')
-        self.assertEqual(inst.negate(), Any('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertEqual(inst.negate(), Any("index", "val"))
 
     def test_not_equal_to_another_type(self):
         from . import Any
-        inst = self._makeOne('index', 'val')
-        self.assertNotEqual(inst, Any('index', 'val'))
+
+        inst = self._makeOne("index", "val")
+        self.assertNotEqual(inst, Any("index", "val"))
 
 
 class TestInRange(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import InRange
+
         return InRange
 
-    def _makeOne(self, index, begin, end,
-                 begin_exclusive=False, end_exclusive=False):
-        return self._getTargetClass()(
-            index, begin, end, begin_exclusive, end_exclusive)
+    def _makeOne(self, index, begin, end, begin_exclusive=False, end_exclusive=False):
+        return self._getTargetClass()(index, begin, end, begin_exclusive, end_exclusive)
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'begin', 'end')
+        inst = self._makeOne(index, "begin", "end")
         result = inst._apply(None)
-        self.assertEqual(result, ('begin', 'end', False, False))
-        self.assertEqual(
-            index.range, ('begin', 'end', False, False))
+        self.assertEqual(result, ("begin", "end", False, False))
+        self.assertEqual(index.range, ("begin", "end", False, False))
 
     def test_apply_w_names(self):
         from . import Name
+
         index = DummyIndex()
-        inst = self._makeOne(index, Name('foo'), Name('bar'))
-        result = inst._apply({'foo': 'begin', 'bar': 'end'})
-        self.assertEqual(result, ('begin', 'end', False, False))
-        self.assertEqual(
-            index.range, ('begin', 'end', False, False))
+        inst = self._makeOne(index, Name("foo"), Name("bar"))
+        result = inst._apply({"foo": "begin", "bar": "end"})
+        self.assertEqual(result, ("begin", "end", False, False))
+        self.assertEqual(index.range, ("begin", "end", False, False))
 
     def test_apply_w_names_missing(self):
         from . import Name
+
         index = DummyIndex()
-        inst = self._makeOne(index, Name('foo'), Name('bar'))
+        inst = self._makeOne(index, Name("foo"), Name("bar"))
         self.assertRaises(NameError, inst._apply, {})
-        self.assertRaises(NameError, inst._apply, {'foo': 'begin'})
+        self.assertRaises(NameError, inst._apply, {"foo": "begin"})
 
     def test_apply_exclusive(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'begin', 'end', True, True)
+        inst = self._makeOne(index, "begin", "end", True, True)
         result = inst._apply(None)
-        self.assertEqual(result, ('begin', 'end', True, True))
-        self.assertEqual(
-            index.range, ('begin', 'end', True, True))
+        self.assertEqual(result, ("begin", "end", True, True))
+        self.assertEqual(index.range, ("begin", "end", True, True))
 
     def test_to_str(self):
-        index = DummyIndex('index')
+        index = DummyIndex("index")
         inst = self._makeOne(index, 0, 5)
         self.assertEqual(str(inst), "0 <= index <= 5")
 
     def test_to_str_exclusive(self):
-        index = DummyIndex('index')
+        index = DummyIndex("index")
         inst = self._makeOne(index, 0, 5, True, True)
         self.assertEqual(str(inst), "0 < index < 5")
 
     def test_from_gtlt(self):
         from . import Ge
         from . import Le
-        index = DummyIndex('index')
+
+        index = DummyIndex("index")
         gt = Ge(index, 0)
         lt = Le(index, 5)
         inst = self._getTargetClass().fromGTLT(gt, lt)
@@ -604,7 +637,8 @@ class TestInRange(ComparatorTestBase):
     def test_from_gtlt_exclusive(self):
         from . import Gt
         from . import Lt
-        index = DummyIndex('index')
+
+        index = DummyIndex("index")
         gt = Gt(index, 0)
         lt = Lt(index, 5)
         inst = self._getTargetClass().fromGTLT(gt, lt)
@@ -612,78 +646,74 @@ class TestInRange(ComparatorTestBase):
 
     def test_negate(self):
         from . import NotInRange
-        inst = self._makeOne('index', 'begin', 'end')
-        self.assertEqual(inst.negate(), NotInRange('index', 'begin', 'end'))
+
+        inst = self._makeOne("index", "begin", "end")
+        self.assertEqual(inst.negate(), NotInRange("index", "begin", "end"))
 
     def test_not_equal_to_another_type(self):
-        inst = self._makeOne('index', 'begin', 'end')
+        inst = self._makeOne("index", "begin", "end")
         self.assertNotEqual(inst, object())
 
 
 class TestNotInRange(ComparatorTestBase):
-
     def _getTargetClass(self):
         from . import NotInRange
+
         return NotInRange
 
-    def _makeOne(self, index, begin, end,
-                 begin_exclusive=False, end_exclusive=False):
-        return self._getTargetClass()(
-            index, begin, end, begin_exclusive, end_exclusive)
+    def _makeOne(self, index, begin, end, begin_exclusive=False, end_exclusive=False):
+        return self._getTargetClass()(index, begin, end, begin_exclusive, end_exclusive)
 
     def test_apply(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'begin', 'end')
+        inst = self._makeOne(index, "begin", "end")
         result = inst._apply(None)
-        self.assertEqual(result, ('begin', 'end', False, False))
-        self.assertEqual(
-            index.not_range, ('begin', 'end', False, False))
+        self.assertEqual(result, ("begin", "end", False, False))
+        self.assertEqual(index.not_range, ("begin", "end", False, False))
 
     def test_apply_exclusive(self):
         index = DummyIndex()
-        inst = self._makeOne(index, 'begin', 'end', True, True)
+        inst = self._makeOne(index, "begin", "end", True, True)
         result = inst._apply(None)
-        self.assertEqual(result, ('begin', 'end', True, True))
-        self.assertEqual(
-            index.not_range, ('begin', 'end', True, True))
+        self.assertEqual(result, ("begin", "end", True, True))
+        self.assertEqual(index.not_range, ("begin", "end", True, True))
 
     def test_to_str(self):
-        index = DummyIndex('index')
+        index = DummyIndex("index")
         inst = self._makeOne(index, 0, 5)
         self.assertEqual(str(inst), "not(0 <= index <= 5)")
 
     def test_to_str_exclusive(self):
-        index = DummyIndex('index')
+        index = DummyIndex("index")
         inst = self._makeOne(index, 0, 5, True, True)
         self.assertEqual(str(inst), "not(0 < index < 5)")
 
     def test_negate(self):
         from . import InRange
-        inst = self._makeOne('index', 'begin', 'end')
-        self.assertEqual(inst.negate(), InRange('index', 'begin', 'end'))
+
+        inst = self._makeOne("index", "begin", "end")
+        self.assertEqual(inst.negate(), InRange("index", "begin", "end"))
 
     def test_not_equal_to_another_type(self):
-        inst = self._makeOne('index', 'begin', 'end')
+        inst = self._makeOne("index", "begin", "end")
         self.assertNotEqual(inst, object())
 
 
 class BoolOpTestBase(unittest.TestCase):
-
     def _makeOne(self, left, right):
         return self._getTargetClass()(left, right)
 
 
 class TestBoolOp(BoolOpTestBase):
-
     def _getTargetClass(self):
         from . import BoolOp as cls
+
         return cls
 
     def _makeDummyQuery(self, values):
         return DummyQuery(values, index=DummyIndex())
 
     def test_iter_children(self):
-
         class Dummy(object):
             pass
 
@@ -692,22 +722,23 @@ class TestBoolOp(BoolOpTestBase):
         self.assertEqual(list(o.iter_children()), [left, right])
 
     def test_flush(self):
-        left = self._makeDummyQuery({'foo': 11})
-        right = self._makeDummyQuery({'bar': 12})
+        left = self._makeDummyQuery({"foo": 11})
+        right = self._makeDummyQuery({"bar": 12})
         inst = self._makeOne(left, right)
         inst.flush(True)
         self.assertEqual(left.flushed, True)
         self.assertEqual(right.flushed, True)
 
-class TestOr(BoolOpTestBase):
 
+class TestOr(BoolOpTestBase):
     def _getTargetClass(self):
         from . import Or as cls
+
         return cls
 
     def test_to_str(self):
         o = self._makeOne(None, None)
-        self.assertEqual(str(o), 'Or')
+        self.assertEqual(str(o), "Or")
 
     def test_apply(self):
         left = DummyQuery(set([1, 2]))
@@ -744,8 +775,9 @@ class TestOr(BoolOpTestBase):
 
     def test_negate(self):
         from . import And
-        left = DummyQuery('foo')
-        right = DummyQuery('bar')
+
+        left = DummyQuery("foo")
+        right = DummyQuery("bar")
         o = self._makeOne(left, right)
         neg = o.negate()
         self.assertTrue(isinstance(neg, And))
@@ -753,15 +785,16 @@ class TestOr(BoolOpTestBase):
         self.assertTrue(left.negated)
         self.assertTrue(right.negated)
 
-class TestAnd(BoolOpTestBase):
 
+class TestAnd(BoolOpTestBase):
     def _getTargetClass(self):
         from . import And as cls
+
         return cls
 
     def test_to_str(self):
         o = self._makeOne(None, None)
-        self.assertEqual(str(o), 'And')
+        self.assertEqual(str(o), "And")
 
     def test_apply(self):
         left = DummyQuery(set([1, 2, 3]))
@@ -798,8 +831,9 @@ class TestAnd(BoolOpTestBase):
 
     def test_negate(self):
         from . import Or
-        left = DummyQuery('foo')
-        right = DummyQuery('bar')
+
+        left = DummyQuery("foo")
+        right = DummyQuery("bar")
         o = self._makeOne(left, right)
         neg = o.negate()
         self.assertTrue(isinstance(neg, Or))
@@ -807,145 +841,158 @@ class TestAnd(BoolOpTestBase):
         self.assertTrue(left.negated)
         self.assertTrue(right.negated)
 
-class TestBoolOpExecute(unittest.TestCase):
 
+class TestBoolOpExecute(unittest.TestCase):
     def _makeDummyQuery(self, values):
         return DummyQuery(values, index=DummyIndex())
 
     def test_execute(self):
         from . import Or
-        left = self._makeDummyQuery({'foo': 11})
-        right = self._makeDummyQuery({'bar': 12})
+
+        left = self._makeDummyQuery({"foo": 11})
+        right = self._makeDummyQuery({"bar": 12})
         inst = Or(left, right)
-        rs = inst.execute(names={'a': 1})
-        self.assertEqual(rs['names'], {'a':1})
-        self.assertEqual(rs['query'], inst)
+        rs = inst.execute(names={"a": 1})
+        self.assertEqual(rs["names"], {"a": 1})
+        self.assertEqual(rs["query"], inst)
 
     def test_execute_first(self):
         from . import Or
         from . import And
-        left = self._makeDummyQuery({'foo': 11})
-        right = self._makeDummyQuery({'bar': 12})
+
+        left = self._makeDummyQuery({"foo": 11})
+        right = self._makeDummyQuery({"bar": 12})
         o = Or(left, right)
-        third = self._makeDummyQuery({'boo': 21})
+        third = self._makeDummyQuery({"boo": 21})
         a = And(o, third)
         rs = a.execute()
-        self.assertEqual(rs['query'], a)
+        self.assertEqual(rs["query"], a)
 
     def test_execute_second(self):
         from . import Or
         from . import And
-        left = self._makeDummyQuery({'foo': 11})
-        right = self._makeDummyQuery({'bar': 12})
+
+        left = self._makeDummyQuery({"foo": 11})
+        right = self._makeDummyQuery({"bar": 12})
         o = Or(left, right)
-        third = self._makeDummyQuery({'soap': 22})
+        third = self._makeDummyQuery({"soap": 22})
         a = And(third, o)
         rs = a.execute()
-        self.assertEqual(rs['query'], a)
+        self.assertEqual(rs["query"], a)
 
     def test_execute_both(self):
         from . import And
-        left = self._makeDummyQuery({'foo': 11})
-        right = self._makeDummyQuery({'bar': 12})
+
+        left = self._makeDummyQuery({"foo": 11})
+        right = self._makeDummyQuery({"bar": 12})
         a = And(left, right)
         rs = a.execute()
-        self.assertEqual(rs['query'], a)
+        self.assertEqual(rs["query"], a)
 
     def test_execute_none(self):
         from . import Or
         from . import And
-        left = self._makeDummyQuery({'foo': 11})
-        right = self._makeDummyQuery({'bar': 12})
+
+        left = self._makeDummyQuery({"foo": 11})
+        right = self._makeDummyQuery({"bar": 12})
         o = Or(left, right)
-        third = self._makeDummyQuery({'boo': 21})
-        fourth = self._makeDummyQuery({'soap': 22})
+        third = self._makeDummyQuery({"boo": 21})
+        fourth = self._makeDummyQuery({"soap": 22})
         o2 = Or(third, fourth)
         a = And(o, o2)
         rs = a.execute()
-        self.assertEqual(rs['query'], a)
+        self.assertEqual(rs["query"], a)
 
     def test_execute_withargs(self):
         from . import Or
-        left = self._makeDummyQuery({'foo': 11})
-        right = self._makeDummyQuery({'bar': 12})
+
+        left = self._makeDummyQuery({"foo": 11})
+        right = self._makeDummyQuery({"bar": 12})
         inst = Or(left, right)
-        rs = inst.execute(optimize=False, names={'a': 1}, resolver=True)
-        self.assertEqual(rs['query'], inst)
-        self.assertEqual(rs['names'], {'a':1})
-        self.assertEqual(rs['resolver'], True)
+        rs = inst.execute(optimize=False, names={"a": 1}, resolver=True)
+        self.assertEqual(rs["query"], inst)
+        self.assertEqual(rs["names"], {"a": 1})
+        self.assertEqual(rs["resolver"], True)
 
     def test_execute_no_queries(self):
         from . import Or
+
         inst = Or()
-        self.assertRaises(ValueError, inst.execute,
-                          optimize=False, names={'a': 1}, resolver=True)
-        
+        self.assertRaises(
+            ValueError, inst.execute, optimize=False, names={"a": 1}, resolver=True
+        )
+
     def test_execute_no_query_has_an_index(self):
         from . import Or
+
         class Dummy(object):
             def iter_children(self):
                 return ()
+
         inst = Or(Dummy())
-        self.assertRaises(ValueError, inst.execute,
-                          optimize=False, names={'a': 1}, resolver=True)
+        self.assertRaises(
+            ValueError, inst.execute, optimize=False, names={"a": 1}, resolver=True
+        )
+
 
 class TestNot(BoolOpTestBase):
-
     def _makeOne(self, query):
         from . import Not as cls
+
         return cls(query)
 
     def test_to_str(self):
         o = self._makeOne(None)
-        self.assertEqual(str(o), 'Not')
+        self.assertEqual(str(o), "Not")
 
     def test_apply(self):
-        query = DummyQuery('foo')
+        query = DummyQuery("foo")
         o = self._makeOne(query)
-        self.assertEqual(o._apply(None), 'foo')
+        self.assertEqual(o._apply(None), "foo")
         self.assertTrue(query.negated)
         self.assertTrue(query.applied)
 
     def test_negate(self):
-        query = DummyQuery('foo')
+        query = DummyQuery("foo")
         o = self._makeOne(query)
         self.assertEqual(o.negate(), query)
 
     def test_iter_children(self):
-        query = DummyQuery('foo')
+        query = DummyQuery("foo")
         o = self._makeOne(query)
         self.assertEqual(list(o.iter_children()), [query])
 
     def test_execute(self):
         index = DummyIndex()
-        query = DummyQuery('foo', index=index)
+        query = DummyQuery("foo", index=index)
         inst = self._makeOne(query)
         rs = inst.execute()
-        self.assertEqual(rs['query'], query)
-        self.assertEqual(rs['names'], None)
-        self.assertEqual(rs['resolver'], None)
+        self.assertEqual(rs["query"], query)
+        self.assertEqual(rs["names"], None)
+        self.assertEqual(rs["resolver"], None)
 
     def test_execute_withargs(self):
         index = DummyIndex()
-        query = DummyQuery('foo', index=index)
+        query = DummyQuery("foo", index=index)
         inst = self._makeOne(query)
-        rs = inst.execute(optimize=False, names={'a':1}, resolver=True)
-        self.assertEqual(rs['query'], inst)
-        self.assertEqual(rs['names'], {'a':1})
-        self.assertEqual(rs['resolver'], True)
+        rs = inst.execute(optimize=False, names={"a": 1}, resolver=True)
+        self.assertEqual(rs["query"], inst)
+        self.assertEqual(rs["names"], {"a": 1})
+        self.assertEqual(rs["resolver"], True)
 
     def test_flush(self):
         index = DummyIndex()
-        query = DummyQuery('foo', index=index)
+        query = DummyQuery("foo", index=index)
         inst = self._makeOne(query)
         inst.flush(True)
         self.assertEqual(query.flushed, True)
 
-class TestName(unittest.TestCase):
 
+class TestName(unittest.TestCase):
     def _makeOne(self):
         from . import Name as cls
-        return cls('foo')
+
+        return cls("foo")
 
     def test_to_str(self):
         o = self._makeOne()
@@ -956,14 +1003,15 @@ class TestName(unittest.TestCase):
         o2 = self._makeOne()
         self.assertFalse(o1 is o2)
         self.assertTrue(o1 == o2)
-        self.assertFalse(o1 == 'foo')
+        self.assertFalse(o1 == "foo")
 
 
 class Test_parse_query(unittest.TestCase):
-
     def _call_fut(self, expr):
         from . import parse_query as fut
+
         indexes = {}
+
         class Catalog(object):
             def __getitem__(self, name):
                 index = indexes.get(name)
@@ -971,127 +1019,138 @@ class Test_parse_query(unittest.TestCase):
                     index = DummyIndex(name)
                     indexes[name] = index
                 return index
+
         catalog = Catalog()
         return fut(expr, catalog)
 
     def test_not_an_expression(self):
-        self.assertRaises(ValueError, self._call_fut, 'a = 1')
+        self.assertRaises(ValueError, self._call_fut, "a = 1")
 
     def test_multiple_expressions(self):
-        self.assertRaises(ValueError, self._call_fut, 'a == 1\nb == 2\n')
+        self.assertRaises(ValueError, self._call_fut, "a == 1\nb == 2\n")
 
     def test_unhandled_operator(self):
-        self.assertRaises(ValueError, self._call_fut, 'a ^ b')
+        self.assertRaises(ValueError, self._call_fut, "a ^ b")
 
     def test_non_string_index_name(self):
         # == is not commutative in this context, sorry.
-        self.assertRaises(ValueError, self._call_fut, '1 == a')
+        self.assertRaises(ValueError, self._call_fut, "1 == a")
 
     def test_bad_operand_for_set_operation(self):
-        self.assertRaises(ValueError, self._call_fut, '(a == 1) | 2')
-        self.assertRaises(ValueError, self._call_fut, '1 | (b == 2)')
+        self.assertRaises(ValueError, self._call_fut, "(a == 1) | 2")
+        self.assertRaises(ValueError, self._call_fut, "1 | (b == 2)")
 
     def test_bad_operand_for_bool_operation(self):
-        self.assertRaises(ValueError, self._call_fut, '1 or 2')
+        self.assertRaises(ValueError, self._call_fut, "1 or 2")
 
     def test_bad_comparator_chaining(self):
-        self.assertRaises(ValueError, self._call_fut, '1 < 2 > 3')
-        self.assertRaises(ValueError, self._call_fut, 'x == y == z')
+        self.assertRaises(ValueError, self._call_fut, "1 < 2 > 3")
+        self.assertRaises(ValueError, self._call_fut, "x == y == z")
 
     def test_bad_func_call(self):
-        self.assertRaises(ValueError, self._call_fut, 'a in foo(bar)')
+        self.assertRaises(ValueError, self._call_fut, "a in foo(bar)")
 
     def test_wrong_number_or_args_for_any(self):
-        self.assertRaises(ValueError, self._call_fut, 'a in any(1, 2)')
+        self.assertRaises(ValueError, self._call_fut, "a in any(1, 2)")
 
     def test_num(self):
-        self.assertEqual(self._call_fut('1'), 1)
-        self.assertEqual(self._call_fut('1.1'), 1.1)
+        self.assertEqual(self._call_fut("1"), 1)
+        self.assertEqual(self._call_fut("1.1"), 1.1)
 
     def test_str(self):
-        self.assertEqual(self._call_fut('"foo"'), 'foo')
+        self.assertEqual(self._call_fut('"foo"'), "foo")
 
     @_skip_on_Python_3_2
     def test_unicode(self):
         from hypatia._compat import u
-        self.assertEqual(self._call_fut('u"foo"'), u('foo'))
+
+        self.assertEqual(self._call_fut('u"foo"'), u("foo"))
 
     def test_list(self):
-        self.assertEqual(self._call_fut('[1, 2, 3]'), [1, 2, 3])
+        self.assertEqual(self._call_fut("[1, 2, 3]"), [1, 2, 3])
 
     def test_tuple(self):
         from . import Name
-        self.assertEqual(self._call_fut('(a, b, c)'),
-                         (Name('a'), Name('b'), Name('c')))
+
+        self.assertEqual(self._call_fut("(a, b, c)"), (Name("a"), Name("b"), Name("c")))
 
     def test_dotted_name(self):
-        self.assertEqual(self._call_fut('a.foo').id, 'a.foo')
+        self.assertEqual(self._call_fut("a.foo").id, "a.foo")
 
     def test_dotted_names(self):
-        self.assertEqual(self._call_fut('a.foo.bar').id, 'a.foo.bar')
+        self.assertEqual(self._call_fut("a.foo.bar").id, "a.foo.bar")
 
     def test_eq(self):
         from . import Eq
-        eq = self._call_fut('a.foo == 1')
+
+        eq = self._call_fut("a.foo == 1")
         self.assertTrue(isinstance(eq, Eq))
-        self.assertEqual(eq.index.name, 'a.foo')
+        self.assertEqual(eq.index.name, "a.foo")
         self.assertEqual(eq._value, 1)
 
     def test_not_eq(self):
         from . import NotEq
+
         not_eq = self._call_fut("a != 'one'")
         self.assertTrue(isinstance(not_eq, NotEq))
-        self.assertEqual(not_eq.index.name, 'a')
+        self.assertEqual(not_eq.index.name, "a")
         self.assertEqual(not_eq._value, "one")
 
     def test_lt(self):
         from . import Lt
         from . import Name
+
         lt = self._call_fut("a < foo")
         self.assertTrue(isinstance(lt, Lt))
-        self.assertEqual(lt.index.name, 'a')
-        self.assertEqual(lt._value, Name('foo'))
+        self.assertEqual(lt.index.name, "a")
+        self.assertEqual(lt._value, Name("foo"))
 
     def test_le(self):
         from . import Le
+
         le = self._call_fut("a <= 4")
         self.assertTrue(isinstance(le, Le))
-        self.assertEqual(le.index.name, 'a')
+        self.assertEqual(le.index.name, "a")
         self.assertEqual(le._value, 4)
 
     def test_gt(self):
         from . import Gt
-        gt = self._call_fut('b > 2')
+
+        gt = self._call_fut("b > 2")
         self.assertTrue(isinstance(gt, Gt))
-        self.assertEqual(gt.index.name, 'b')
+        self.assertEqual(gt.index.name, "b")
         self.assertEqual(gt._value, 2)
 
     def test_ge(self):
         from . import Ge
+
         ge = self._call_fut("a >= 5")
         self.assertTrue(isinstance(ge, Ge))
-        self.assertEqual(ge.index.name, 'a')
+        self.assertEqual(ge.index.name, "a")
         self.assertEqual(ge._value, 5)
 
     def test_contains(self):
         from . import Contains
+
         contains = self._call_fut("6 in a")
         self.assertTrue(isinstance(contains, Contains))
-        self.assertEqual(contains.index.name, 'a')
+        self.assertEqual(contains.index.name, "a")
         self.assertEqual(contains._value, 6)
 
     def test_not_contains(self):
         from . import NotContains
+
         contains = self._call_fut("6 not in a")
         self.assertTrue(isinstance(contains, NotContains))
-        self.assertEqual(contains.index.name, 'a')
+        self.assertEqual(contains.index.name, "a")
         self.assertEqual(contains._value, 6)
 
     def test_range_exclusive_exclusive(self):
         from . import InRange
+
         comp = self._call_fut("0 < a < 5")
         self.assertTrue(isinstance(comp, InRange))
-        self.assertEqual(comp.index.name, 'a')
+        self.assertEqual(comp.index.name, "a")
         self.assertEqual(comp._start, 0)
         self.assertEqual(comp._end, 5)
         self.assertTrue(comp.start_exclusive)
@@ -1099,9 +1158,10 @@ class Test_parse_query(unittest.TestCase):
 
     def test_range_exclusive_inclusive(self):
         from . import InRange
+
         comp = self._call_fut("0 < a <= 5")
         self.assertTrue(isinstance(comp, InRange))
-        self.assertEqual(comp.index.name, 'a')
+        self.assertEqual(comp.index.name, "a")
         self.assertEqual(comp._start, 0)
         self.assertEqual(comp._end, 5)
         self.assertTrue(comp.start_exclusive)
@@ -1109,9 +1169,10 @@ class Test_parse_query(unittest.TestCase):
 
     def test_range_inclusive_exclusive(self):
         from . import InRange
+
         comp = self._call_fut("0 <= a < 5")
         self.assertTrue(isinstance(comp, InRange))
-        self.assertEqual(comp.index.name, 'a')
+        self.assertEqual(comp.index.name, "a")
         self.assertEqual(comp._start, 0)
         self.assertEqual(comp._end, 5)
         self.assertFalse(comp.start_exclusive)
@@ -1119,9 +1180,10 @@ class Test_parse_query(unittest.TestCase):
 
     def test_range_inclusive_inclusive(self):
         from . import InRange
+
         comp = self._call_fut("0 <= a <= 5")
         self.assertTrue(isinstance(comp, InRange))
-        self.assertEqual(comp.index.name, 'a')
+        self.assertEqual(comp.index.name, "a")
         self.assertEqual(comp._start, 0)
         self.assertEqual(comp._end, 5)
         self.assertFalse(comp.start_exclusive)
@@ -1129,9 +1191,10 @@ class Test_parse_query(unittest.TestCase):
 
     def test_not_in_range(self):
         from . import NotInRange
+
         comp = self._call_fut("not(0 < a < 5)")
         self.assertTrue(isinstance(comp, NotInRange))
-        self.assertEqual(comp.index.name, 'a')
+        self.assertEqual(comp.index.name, "a")
         self.assertEqual(comp._start, 0)
         self.assertEqual(comp._end, 5)
         self.assertTrue(comp.start_exclusive)
@@ -1140,129 +1203,143 @@ class Test_parse_query(unittest.TestCase):
     def test_or(self):
         from . import Eq
         from . import Or
+
         op = self._call_fut("(a == 1) | (b == 2)")
         self.assertTrue(isinstance(op, Or))
         query = op.queries[0]
         self.assertTrue(isinstance(query, Eq))
-        self.assertEqual(query.index.name, 'a')
+        self.assertEqual(query.index.name, "a")
         self.assertEqual(query._value, 1)
         query = op.queries[1]
         self.assertTrue(isinstance(query, Eq))
-        self.assertEqual(query.index.name, 'b')
+        self.assertEqual(query.index.name, "b")
         self.assertEqual(query._value, 2)
 
     def test_or_with_bool_syntax(self):
         from . import NotEq
         from . import Or
+
         op = self._call_fut("a != 1 or b != 2")
         self.assertTrue(isinstance(op, Or))
         query = op.queries[0]
         self.assertTrue(isinstance(query, NotEq))
-        self.assertEqual(query.index.name, 'a')
+        self.assertEqual(query.index.name, "a")
         self.assertEqual(query._value, 1)
         query = op.queries[1]
         self.assertTrue(isinstance(query, NotEq))
-        self.assertEqual(query.index.name, 'b')
+        self.assertEqual(query.index.name, "b")
         self.assertEqual(query._value, 2)
 
     def test_any(self):
         from . import Any
+
         op = self._call_fut("a == 1 or a == 2 or a == 3")
         self.assertTrue(isinstance(op, Any), op)
-        self.assertEqual(op.index.name, 'a')
+        self.assertEqual(op.index.name, "a")
         self.assertEqual(op._value, [1, 2, 3])
 
     def test_better_any(self):
         from . import Any
+
         op = self._call_fut("a in any([1, 2, 3])")
         self.assertTrue(isinstance(op, Any), op)
-        self.assertEqual(op.index.name, 'a')
+        self.assertEqual(op.index.name, "a")
         self.assertEqual(op._value, [1, 2, 3])
 
     def test_any_with_name(self):
         from . import Any
         from . import Name
+
         op = self._call_fut("a in any(foo)")
         self.assertTrue(isinstance(op, Any), op)
-        self.assertEqual(op.index.name, 'a')
-        self.assertEqual(op._value, Name('foo'))
+        self.assertEqual(op.index.name, "a")
+        self.assertEqual(op._value, Name("foo"))
 
     def test_any_with_names(self):
         from . import Any
         from . import Name
+
         op = self._call_fut("a in any([foo, bar])")
         self.assertTrue(isinstance(op, Any), op)
-        self.assertEqual(op.index.name, 'a')
-        self.assertEqual(op._value, [Name('foo'), Name('bar')])
+        self.assertEqual(op.index.name, "a")
+        self.assertEqual(op._value, [Name("foo"), Name("bar")])
 
     def test_not_any(self):
         from . import NotAny
+
         op = self._call_fut("not(a == 1 or a == 2 or a == 3)")
         self.assertTrue(isinstance(op, NotAny), op)
-        self.assertEqual(op.index.name, 'a')
+        self.assertEqual(op.index.name, "a")
         self.assertEqual(op._value, [1, 2, 3])
 
     def test_better_not_any(self):
         from . import NotAny
+
         op = self._call_fut("a not in any([1, 2, 3])")
         self.assertTrue(isinstance(op, NotAny), op)
-        self.assertEqual(op.index.name, 'a')
+        self.assertEqual(op.index.name, "a")
         self.assertEqual(op._value, [1, 2, 3])
 
     def test_and(self):
         from . import Eq
         from . import And
+
         op = self._call_fut("(a == 1) & (b == 2)")
         self.assertTrue(isinstance(op, And))
         query = op.queries[0]
         self.assertTrue(isinstance(query, Eq))
-        self.assertEqual(query.index.name, 'a')
+        self.assertEqual(query.index.name, "a")
         self.assertEqual(query._value, 1)
         query = op.queries[1]
         self.assertTrue(isinstance(query, Eq))
-        self.assertEqual(query.index.name, 'b')
+        self.assertEqual(query.index.name, "b")
         self.assertEqual(query._value, 2)
 
     def test_and_with_bool_syntax(self):
         from . import Eq
         from . import And
+
         op = self._call_fut("a == 1 and b == 2")
         self.assertTrue(isinstance(op, And))
         query = op.queries[0]
         self.assertTrue(isinstance(query, Eq))
-        self.assertEqual(query.index.name, 'a')
+        self.assertEqual(query.index.name, "a")
         self.assertEqual(query._value, 1)
         query = op.queries[1]
         self.assertTrue(isinstance(query, Eq))
-        self.assertEqual(query.index.name, 'b')
+        self.assertEqual(query.index.name, "b")
         self.assertEqual(query._value, 2)
 
     def test_all(self):
         from . import All
+
         op = self._call_fut("a == 1 and a == 2 and a == 3")
         self.assertTrue(isinstance(op, All), op)
-        self.assertEqual(op.index.name, 'a')
+        self.assertEqual(op.index.name, "a")
         self.assertEqual(op._value, [1, 2, 3])
 
     def test_better_all(self):
         from . import All
+
         op = self._call_fut("a in all([1, 2, 3])")
         self.assertTrue(isinstance(op, All), op)
-        self.assertEqual(op.index.name, 'a')
+        self.assertEqual(op.index.name, "a")
         self.assertEqual(op._value, [1, 2, 3])
 
     def test_not_all(self):
         from . import NotAll
+
         op = self._call_fut("not(a == 1 and a == 2 and a == 3)")
         self.assertTrue(isinstance(op, NotAll), op)
-        self.assertEqual(op.index.name, 'a')
+        self.assertEqual(op.index.name, "a")
         self.assertEqual(op._value, [1, 2, 3])
 
     def test_better_not_all(self):
         from . import NotAll
+
         op = self._call_fut("a not in all([1, 2, 3])")
         self.assertTrue(isinstance(op, NotAll), op)
-        self.assertEqual(op.index.name, 'a')
+        self.assertEqual(op.index.name, "a")
         self.assertEqual(op._value, [1, 2, 3])
 
     def test_all_with_or(self):
@@ -1273,15 +1350,17 @@ class Test_parse_query(unittest.TestCase):
         from . import All
         from . import Eq
         from . import Or
+
         op = self._call_fut("a == 1 or a == 2 and a == 3")
         self.assertTrue(isinstance(op, Or))
         self.assertTrue(isinstance(op.queries[0], Eq))
         self.assertTrue(isinstance(op.queries[1], All))
-        self.assertEqual(op.queries[1].index.name, 'a')
+        self.assertEqual(op.queries[1].index.name, "a")
         self.assertEqual(op.queries[1]._value, [2, 3])
 
     def test_convert_gtlt_to_range(self):
         from . import InRange
+
         op = self._call_fut("a < 1 and a > 0")
         self.assertTrue(isinstance(op, InRange))
         self.assertEqual(op._start, 0)
@@ -1291,6 +1370,7 @@ class Test_parse_query(unittest.TestCase):
 
     def test_convert_ltgt_to_range(self):
         from . import InRange
+
         op = self._call_fut("a > 0 and a < 1")
         self.assertTrue(isinstance(op, InRange))
         self.assertEqual(op._start, 0)
@@ -1300,6 +1380,7 @@ class Test_parse_query(unittest.TestCase):
 
     def test_convert_gtlt_to_not_in_range(self):
         from . import NotInRange
+
         op = self._call_fut("a < 0 or a > 1")
         self.assertTrue(isinstance(op, NotInRange))
         self.assertEqual(op._start, 0)
@@ -1309,6 +1390,7 @@ class Test_parse_query(unittest.TestCase):
 
     def test_convert_ltgt_to_not_in_range(self):
         from . import NotInRange
+
         op = self._call_fut("a > 1 or a < 0")
         self.assertTrue(isinstance(op, NotInRange))
         self.assertEqual(op._start, 0)
@@ -1320,6 +1402,7 @@ class Test_parse_query(unittest.TestCase):
         from . import Eq
         from . import And
         from . import InRange
+
         op = self._call_fut("a > 0 and (a < 5 and b == 7)")
         self.assertTrue(isinstance(op, And))
         self.assertTrue(isinstance(op.queries[0], InRange))
@@ -1329,6 +1412,7 @@ class Test_parse_query(unittest.TestCase):
         from . import Eq
         from . import And
         from . import InRange
+
         op = self._call_fut("a > 0 and (b == 7 and a < 5)")
         self.assertTrue(isinstance(op, And))
         self.assertTrue(isinstance(op.queries[0], InRange))
@@ -1339,6 +1423,7 @@ class Test_parse_query(unittest.TestCase):
         from . import Gt
         from . import And
         from . import InRange
+
         op = self._call_fut("a >= -1 and b == 2 and c > 3 and a <= 1")
         self.assertTrue(isinstance(op, And))
         self.assertTrue(isinstance(op.queries[0], InRange))
@@ -1350,6 +1435,7 @@ class Test_parse_query(unittest.TestCase):
         from . import Gt
         from . import And
         from . import InRange
+
         op = self._call_fut("b == 2 and a > -1 and (a <= 1 and c > 3)")
         self.assertTrue(isinstance(op, And))
         self.assertTrue(isinstance(op.queries[0], Eq))
@@ -1359,8 +1445,10 @@ class Test_parse_query(unittest.TestCase):
     def test_convert_gtlt_both_descendants_multiple_times(self):
         from . import And
         from . import InRange
+
         op = self._call_fut(
-            "(a > 0 and b > 0 and c > 0) and (a < 5 and b < 5 and c < 5)")
+            "(a > 0 and b > 0 and c > 0) and (a < 5 and b < 5 and c < 5)"
+        )
         self.assertTrue(isinstance(op, And))
         self.assertTrue(isinstance(op.queries[0], InRange))
         self.assertTrue(isinstance(op.queries[1], InRange))
@@ -1371,6 +1459,7 @@ class Test_parse_query(unittest.TestCase):
         from . import Lt
         from . import And
         from . import Or
+
         op = self._call_fut("a > 0 and b > 0 or a < 5 and b < 5")
         self.assertTrue(isinstance(op, Or))
         self.assertTrue(isinstance(op.queries[0], And))
@@ -1444,7 +1533,8 @@ class DummyIndex(object):
         return str(self.name)
 
     def resultset_from_query(self, query, names=None, resolver=None):
-        return {'query':query, 'names':names, 'resolver':resolver}
+        return {"query": query, "names": names, "resolver": resolver}
+
 
 class DummyFamily(object):
     @property
@@ -1479,7 +1569,7 @@ class DummyQuery(object):
 
     def flush(self, value):
         self.flushed = value
-    
+
     def intersect(self, theset, names):
         result = self._apply(names)
         if (not theset) or (not result):

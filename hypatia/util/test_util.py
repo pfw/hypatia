@@ -4,11 +4,13 @@ from . import RichComparisonMixin
 
 _marker = object()
 
+
 class TestResultSet(unittest.TestCase):
     def _getTargetClass(self):
         from . import ResultSet
+
         return ResultSet
-        
+
     def _makeOne(self, ids, numids, resolver):
         cls = self._getTargetClass()
         return cls(ids, numids, resolver)
@@ -16,14 +18,16 @@ class TestResultSet(unittest.TestCase):
     def test_class_implements_IResultSet(self):
         from zope.interface.verify import verifyClass
         from hypatia.interfaces import IResultSet
+
         verifyClass(IResultSet, self._getTargetClass())
 
     def test_instance_implements_IResultSet(self):
         from zope.interface.verify import verifyObject
         from hypatia.interfaces import IResultSet
+
         inst = self._makeOne([1], 1, None)
         verifyObject(IResultSet, inst)
-        
+
     def test___len__(self):
         inst = self._makeOne([1], 1, None)
         self.assertEqual(len(inst), 1)
@@ -32,7 +36,7 @@ class TestResultSet(unittest.TestCase):
         inst = self._makeOne([2, 1], 2, None)
         index = DummyIndex()
         result = inst.sort(index)
-        self.assertEqual(result.ids, [1,2])
+        self.assertEqual(result.ids, [1, 2])
         self.assertEqual(result.numids, 2)
         self.assertEqual(result.resolver, None)
         self.assertEqual(index.reverse, False)
@@ -42,7 +46,7 @@ class TestResultSet(unittest.TestCase):
         inst = self._makeOne([2, 1], 2, None)
         index = DummyIndex()
         result = inst.sort(index, limit=1, reverse=True)
-        self.assertEqual(result.ids, [1,2])
+        self.assertEqual(result.ids, [1, 2])
         self.assertEqual(result.numids, 1)
         self.assertEqual(result.resolver, None)
         self.assertEqual(index.reverse, True)
@@ -53,6 +57,7 @@ class TestResultSet(unittest.TestCase):
             yield 2
             yield 1
             yield 3
+
         inst = self._makeOne(mygen(), 3, None)
         index = DummyIndex()
         result = inst.sort(index)
@@ -61,24 +66,25 @@ class TestResultSet(unittest.TestCase):
 
     def test_second_sort_stable(self):
         from hypatia.interfaces import STABLE, OPTIMAL
+
         inst = self._makeOne([2, 1], 2, None)
         index = DummyIndex()
         result = inst.sort(index, limit=1, reverse=True)
-        self.assertEqual(result.ids, [1,2])
+        self.assertEqual(result.ids, [1, 2])
         self.assertEqual(result.numids, 1)
         self.assertEqual(result.resolver, None)
         self.assertEqual(index.reverse, True)
         self.assertEqual(index.limit, 1)
         self.assertEqual(index.sort_type, None)
         result2 = result.sort(index, limit=2)
-        self.assertEqual(result2.ids, [1,2])
+        self.assertEqual(result2.ids, [1, 2])
         self.assertEqual(result2.numids, 1)
         self.assertEqual(result2.resolver, None)
         self.assertEqual(index.reverse, False)
         self.assertEqual(index.limit, 2)
         self.assertEqual(index.sort_type, STABLE)
         result3 = result2.sort(index, limit=3, sort_type=OPTIMAL)
-        self.assertEqual(result3.ids, [1,2])
+        self.assertEqual(result3.ids, [1, 2])
         self.assertEqual(result3.numids, 1)
         self.assertEqual(result3.resolver, None)
         self.assertEqual(index.reverse, False)
@@ -104,11 +110,12 @@ class TestResultSet(unittest.TestCase):
         self.assertEqual(inst.first(), 2)
         self.assertEqual(inst.first(), 2)
         self.assertEqual(inst.ids, ids)
-        
+
     def test_first_idempotent_with_generator_noresolve(self):
         def gen():
             for x in (2, 1):
                 yield x
+
         ids = gen()
         inst = self._makeOne(ids, 2, None)
         self.assertEqual(inst.first(), 2)
@@ -118,6 +125,7 @@ class TestResultSet(unittest.TestCase):
     def test_first_idempotent_with_list(self):
         def resolver(val):
             return val
+
         ids = [2, 1]
         inst = self._makeOne(ids, 2, resolver)
         self.assertEqual(inst.first(), 2)
@@ -127,30 +135,33 @@ class TestResultSet(unittest.TestCase):
     def test_first_idempotent_with_tuple(self):
         def resolver(val):
             return val
+
         ids = (2, 1)
         inst = self._makeOne(ids, 2, resolver)
         self.assertEqual(inst.first(), 2)
         self.assertEqual(inst.first(), 2)
         self.assertEqual(inst.ids, ids)
-        
+
     def test_first_idempotent_with_generator(self):
         def resolver(val):
             return val
+
         def gen():
             for x in (2, 1):
                 yield x
+
         ids = gen()
         inst = self._makeOne(ids, 2, resolver)
         self.assertEqual(inst.first(), 2)
         self.assertEqual(inst.first(), 2)
         self.assertNotEqual(inst.ids, ids)
-        
+
     def test_first_doesnt_affect_iterability(self):
         ids = [2, 1]
         inst = self._makeOne(ids, 2, None)
         self.assertEqual(inst.first(), 2)
-        self.assertEqual(list(inst), [2,1])
-        
+        self.assertEqual(list(inst), [2, 1])
+
     def test_first_resolve_true_no_resolver(self):
         ids = [2, 1]
         inst = self._makeOne(ids, 2, None)
@@ -158,22 +169,27 @@ class TestResultSet(unittest.TestCase):
 
     def test_first_resolve_true_with_resolver(self):
         def resolver(val):
-            return 'a'
+            return "a"
+
         inst = self._makeOne([2, 1], 2, resolver)
-        self.assertEqual(inst.first(), 'a')
+        self.assertEqual(inst.first(), "a")
 
     def test_first_resolve_false(self):
-        def resolver(val): return 'a'
+        def resolver(val):
+            return "a"
+
         inst = self._makeOne([2, 1], 2, resolver)
         self.assertEqual(inst.first(resolve=False), 2)
 
     def test_one_no_docids(self):
         from ..exc import NoResults
+
         inst = self._makeOne([], 0, None)
         self.assertRaises(NoResults, inst.one)
 
     def test_one_more_than_one_docid(self):
         from ..exc import MultipleResults
+
         inst = self._makeOne([1, 2], 2, None)
         self.assertRaises(MultipleResults, inst.one)
 
@@ -183,12 +199,15 @@ class TestResultSet(unittest.TestCase):
 
     def test_one_resolve_true_with_resolver(self):
         def resolver(val):
-            return 'a'
+            return "a"
+
         inst = self._makeOne([1], 1, resolver)
-        self.assertEqual(inst.one(), 'a')
+        self.assertEqual(inst.one(), "a")
 
     def test_one_resolve_false(self):
-        def resolver(val): return 'a'
+        def resolver(val):
+            return "a"
+
         inst = self._makeOne([1], 1, resolver)
         self.assertEqual(inst.one(resolve=False), 1)
 
@@ -202,15 +221,17 @@ class TestResultSet(unittest.TestCase):
 
     def test_all_resolve_true_with_resolver(self):
         def resolver(val):
-            return 'a'
+            return "a"
+
         inst = self._makeOne([2, 1], 2, resolver)
-        self.assertEqual(list(inst.all()), ['a', 'a'])
+        self.assertEqual(list(inst.all()), ["a", "a"])
 
     def test___iter__(self):
         def resolver(val):
-            return 'a'
+            return "a"
+
         inst = self._makeOne([2, 1], 2, resolver)
-        self.assertEqual(list(iter(inst)), ['a', 'a'])
+        self.assertEqual(list(iter(inst)), ["a", "a"])
 
     def test_intersect_docids(self):
         inst = self._makeOne([3, 2, 1], 3, None)
@@ -224,17 +245,22 @@ class TestResultSet(unittest.TestCase):
         result = inst.intersect(inst2)
         self.assertEqual(result.__class__, inst.__class__)
         self.assertEqual(result.ids, [3, 2])
-        
+
+
 class TestBaseIndexMixin(unittest.TestCase):
     def _getTargetClass(self):
         from . import BaseIndexMixin
+
         return BaseIndexMixin
 
     def _makeIndex(self, discriminator):
         import BTrees
+
         klass = self._getTargetClass()
+
         class Test(klass, DummyIndex):
             pass
+
         index = Test()
         index.discriminator = discriminator
         index._docids = BTrees.family64.IF.Set()
@@ -245,27 +271,32 @@ class TestBaseIndexMixin(unittest.TestCase):
     def test_index_doc_callback_returns_nondefault(self):
         def callback(ob, default):
             return ob
+
         index = self._makeIndex(callback)
-        self.assertEqual(index.index_doc(1, 'abc'), 'abc')
-        self.assertEqual(index.value, 'abc')
+        self.assertEqual(index.index_doc(1, "abc"), "abc")
+        self.assertEqual(index.value, "abc")
         self.assertEqual(set(index.docids()), set([1]))
 
     def test_index_doc_string_discrim(self):
-        index = self._makeIndex('abc')
+        index = self._makeIndex("abc")
+
         class Dummy:
-            abc = 'abc'
+            abc = "abc"
+
         dummy = Dummy()
-        self.assertEqual(index.index_doc(1, dummy), 'abc')
-        self.assertEqual(index.value, 'abc')
+        self.assertEqual(index.index_doc(1, dummy), "abc")
+        self.assertEqual(index.value, "abc")
         self.assertEqual(set(index.docids()), set([1]))
 
     def test_index_doc_missing_value_unindexes(self):
-        index = self._makeIndex('abc')
+        index = self._makeIndex("abc")
+
         class Dummy:
             pass
+
         dummy = Dummy()
-        dummy.abc = 'abc'
-        self.assertEqual(index.index_doc(1, dummy), 'abc')
+        dummy.abc = "abc"
+        self.assertEqual(index.index_doc(1, dummy), "abc")
         del dummy.abc
         del index.value
         self.assertEqual(index.index_doc(1, dummy), None)
@@ -274,20 +305,24 @@ class TestBaseIndexMixin(unittest.TestCase):
         self.assertEqual(index.unindexed, 1)
 
     def test_index_doc_missing_value_then_with_value(self):
-        index = self._makeIndex('abc')
+        index = self._makeIndex("abc")
+
         class Dummy:
             pass
+
         dummy = Dummy()
         self.assertEqual(index.index_doc(20, dummy), None)
         self.assertTrue(20 in index.docids())
-        dummy.abc = 'foo'
-        self.assertEqual(index.index_doc(20, dummy), 'foo')
+        dummy.abc = "foo"
+        self.assertEqual(index.index_doc(20, dummy), "foo")
         self.assertTrue(20 in index.docids())
 
     def test_index_doc_missing_value_then_unindex(self):
-        index = self._makeIndex('abc')
+        index = self._makeIndex("abc")
+
         class Dummy:
             pass
+
         dummy = Dummy()
         self.assertEqual(index.index_doc(20, dummy), None)
         self.assertTrue(20 in index.docids())
@@ -295,99 +330,111 @@ class TestBaseIndexMixin(unittest.TestCase):
         self.assertFalse(20 in index.docids())
 
     def test_docids_with_indexed_and_not_indexed(self):
-        index = self._makeIndex('abc')
+        index = self._makeIndex("abc")
+
         class Dummy:
             pass
+
         dummy = Dummy()
         self.assertEqual(index.index_doc(20, dummy), None)
-        dummy.abc = 'foo'
-        self.assertEqual(index.index_doc(21, dummy), 'foo')
+        dummy.abc = "foo"
+        self.assertEqual(index.index_doc(21, dummy), "foo")
         docids = index.docids()
         self.assertEqual(set(docids), set([20, 21]))
 
     def test_indexed_count(self):
-        inst = self._makeIndex('abc')
-        def indexed(): return [1,2,3]
+        inst = self._makeIndex("abc")
+
+        def indexed():
+            return [1, 2, 3]
+
         inst.indexed = indexed
         self.assertEqual(inst.indexed_count(), 3)
 
     def test_not_indexed_count(self):
-        inst = self._makeIndex('abc')
-        def not_indexed(): return [1,2,3]
+        inst = self._makeIndex("abc")
+
+        def not_indexed():
+            return [1, 2, 3]
+
         inst.not_indexed = not_indexed
         self.assertEqual(inst.not_indexed_count(), 3)
 
     def test_docids_count(self):
-        inst = self._makeIndex('abc')
-        def docids(): return [1,2,3]
+        inst = self._makeIndex("abc")
+
+        def docids():
+            return [1, 2, 3]
+
         inst.docids = docids
         self.assertEqual(inst.docids_count(), 3)
 
     def test_index_doc_persistent_value_raises(self):
         from persistent import Persistent
-        index = self._makeIndex('abc')
+
+        index = self._makeIndex("abc")
         index._docids = set()
+
         class Dummy:
             pass
+
         dummy = Dummy()
         dummy.abc = Persistent()
         self.assertRaises(ValueError, index.index_doc, 1, dummy)
 
     def test_index_doc_broken_object_raises(self):
         from ZODB.broken import Broken
-        index = self._makeIndex('abc')
+
+        index = self._makeIndex("abc")
         index._docids = set()
+
         class Dummy:
             pass
+
         dummy = Dummy()
         dummy.abc = Broken()
         self.assertRaises(ValueError, index.index_doc, 1, dummy)
 
     def test_reindex_doc(self):
-        index = self._makeIndex('abc')
+        index = self._makeIndex("abc")
         index._docids = set()
+
         class Dummy:
-            abc = 'abc'
+            abc = "abc"
+
         dummy = Dummy()
         index.index_doc(1, dummy)
         index.reindex_doc(1, dummy)
         self.assertEqual(index.unindexed, 1)
-        self.assertEqual(index.value, 'abc')
+        self.assertEqual(index.value, "abc")
         self.assertEqual(set(index.docids()), set([1]))
 
     def test_qname_with___name__(self):
-        index = self._makeIndex('abc')
-        index.__name__ = 'fred'
-        self.assertEqual(index.qname(), 'fred')
+        index = self._makeIndex("abc")
+        index.__name__ = "fred"
+        self.assertEqual(index.qname(), "fred")
 
     def test_qname_without___name__(self):
-        index = self._makeIndex('abc')
+        index = self._makeIndex("abc")
         self.assertEqual(index.qname(), str(index))
 
     def test_flush(self):
-        index = self._makeIndex('abc')
+        index = self._makeIndex("abc")
         self.assertEqual(index.flush(), None)
 
-class RichComparisonMixinTest(unittest.TestCase):
 
+class RichComparisonMixinTest(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.comp = RichComparer(6)
 
     def testDefaultComparison(self):
-        self.assertRaises(NotImplementedError,
-                          lambda: RichComparisonMixin() == 3)
-        self.assertRaises(NotImplementedError,
-                          lambda: RichComparisonMixin() != 3)
-        self.assertRaises(NotImplementedError,
-                          lambda: RichComparisonMixin() < 3)
-        self.assertRaises(NotImplementedError,
-                          lambda: RichComparisonMixin() > 3)
-        self.assertRaises(NotImplementedError,
-                          lambda: RichComparisonMixin() <= 3)
-        self.assertRaises(NotImplementedError,
-                          lambda: RichComparisonMixin() >= 3)
-
+        self.assertRaises(NotImplementedError, lambda: RichComparisonMixin() == 3)
+        self.assertRaises(NotImplementedError, lambda: RichComparisonMixin() != 3)
+        self.assertRaises(NotImplementedError, lambda: RichComparisonMixin() < 3)
+        self.assertRaises(NotImplementedError, lambda: RichComparisonMixin() > 3)
+        self.assertRaises(NotImplementedError, lambda: RichComparisonMixin() <= 3)
+        self.assertRaises(NotImplementedError, lambda: RichComparisonMixin() >= 3)
 
     def testEquality(self):
         self.assertTrue(self.comp == 6)
@@ -440,20 +487,19 @@ class RichComparisonMixinTest(unittest.TestCase):
 
         self.assertFalse(self.comp >= 7)
         self.assertFalse(self.comp >= RichComparer(7))
-        
+
 
 class RichComparer(RichComparisonMixin):
-
     def __init__(self, value):
         self.value = value
 
     def __eq__(self, other):
-        if not hasattr(other, 'value'):
+        if not hasattr(other, "value"):
             return self.value == other
         return self.value == other.value
 
     def __lt__(self, other):
-        if not hasattr(other, 'value'):
+        if not hasattr(other, "value"):
             return self.value < other
         return self.value < other.value
 
@@ -498,4 +544,3 @@ class DummyIndex(object):
         self.sort_type = sort_type
         self.raise_unsortable = raise_unsortable
         return sorted(ids)
-    

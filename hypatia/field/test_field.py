@@ -1,12 +1,14 @@
 import unittest
 import doctest
+import pytest
 
 _marker = object()
 
-class FieldIndexTests(unittest.TestCase):
 
+class Test_FieldIndex:
     def _getTargetClass(self):
         from . import FieldIndex
+
         return FieldIndex
 
     def _makeOne(self, discriminator=None, family=None):
@@ -14,12 +16,13 @@ class FieldIndexTests(unittest.TestCase):
             if obj is _marker:
                 return default
             return obj
+
         if discriminator is None:
             discriminator = _discriminator
-        return self._getTargetClass()(discriminator=discriminator,
-                                      family=family)
+        return self._getTargetClass()(discriminator=discriminator, family=family)
+
     def _populateIndex(self, index):
-        index.index_doc(5, 1) # docid, obj
+        index.index_doc(5, 1)  # docid, obj
         index.index_doc(2, 2)
         index.index_doc(1, 3)
         index.index_doc(3, 4)
@@ -34,262 +37,279 @@ class FieldIndexTests(unittest.TestCase):
     def test_document_repr(self):
         index = self._makeOne()
         self._populateIndex(index)
-        self.assertEqual(index.document_repr(1), '3')
-        self.assertEqual(index.document_repr(50, True), True)
+        assert index.document_repr(1) == "3"
+        assert index.document_repr(50, True) == True
 
     def test_class_conforms_to_IIndexInjection(self):
         from zope.interface.verify import verifyClass
         from ..interfaces import IIndexInjection
+
         verifyClass(IIndexInjection, self._getTargetClass())
 
     def test_instance_conforms_to_IIndexInjection(self):
         from zope.interface.verify import verifyObject
         from ..interfaces import IIndexInjection
+
         verifyObject(IIndexInjection, self._makeOne())
 
     def test_class_conforms_to_IIndexStatistics(self):
         from zope.interface.verify import verifyClass
         from ..interfaces import IIndexStatistics
+
         verifyClass(IIndexStatistics, self._getTargetClass())
 
     def test_instance_conforms_to_IIndexStatistics(self):
         from zope.interface.verify import verifyObject
         from ..interfaces import IIndexStatistics
+
         verifyObject(IIndexStatistics, self._makeOne())
 
     def test_class_conforms_to_IIndex(self):
         from zope.interface.verify import verifyClass
         from ..interfaces import IIndex
+
         verifyClass(IIndex, self._getTargetClass())
 
     def test_instance_conforms_to_IIndex(self):
         from zope.interface.verify import verifyObject
         from ..interfaces import IIndex
+
         verifyObject(IIndex, self._makeOne())
 
     def test_ctor_defaults(self):
         import BTrees
+
         index = self._makeOne()
-        self.assertTrue(index.family is BTrees.family64)
-        self.assertEqual(index.indexed_count(), 0)
-        self.assertEqual(index.word_count(), 0)
-        self.assertEqual(len(index.unique_values()), 0)
+        assert index.family is BTrees.family64
+        assert index.indexed_count() == 0
+        assert index.word_count() == 0
+        assert len(index.unique_values()) == 0
 
     def test_ctor_explicit_family(self):
         import BTrees
-        index = self._makeOne(family=BTrees.family32)
-        self.assertTrue(index.family is BTrees.family32)
 
+        index = self._makeOne(family=BTrees.family32)
+        assert index.family is BTrees.family32
 
     def test_index_doc_new(self):
         index = self._makeOne()
-        index.index_doc(1, 'value')
-        self.assertEqual(index.indexed_count(), 1)
-        self.assertEqual(index.word_count(), 1)
-        self.assertTrue(1 in index._rev_index)
-        self.assertTrue('value' in index._fwd_index)
-        self.assertEqual(list(index.unique_values()), ['value'])
+        index.index_doc(1, "value")
+        assert index.indexed_count() == 1
+        assert index.word_count() == 1
+        assert 1 in index._rev_index
+        assert "value" in index._fwd_index
+        assert list(index.unique_values()) == ["value"]
 
     def test_index_doc_existing_same_value(self):
         index = self._makeOne()
-        index.index_doc(1, 'value')
-        index.index_doc(1, 'value')
-        self.assertEqual(index.indexed_count(), 1)
-        self.assertEqual(index.word_count(), 1)
-        self.assertTrue(1 in index._rev_index)
-        self.assertTrue('value' in index._fwd_index)
-        self.assertEqual(list(index._fwd_index['value']), [1])
-        self.assertEqual(list(index.unique_values()), ['value'])
+        index.index_doc(1, "value")
+        index.index_doc(1, "value")
+        assert index.indexed_count() == 1
+        assert index.word_count() == 1
+        assert 1 in index._rev_index
+        assert "value" in index._fwd_index
+        assert list(index._fwd_index["value"]) == [1]
+        assert list(index.unique_values()) == ["value"]
 
     def test_index_doc_existing_new_value(self):
         index = self._makeOne()
-        index.index_doc(1, 'value')
-        index.index_doc(1, 'new_value')
-        self.assertEqual(index.indexed_count(), 1)
-        self.assertEqual(index.word_count(), 1)
-        self.assertTrue(1 in index._rev_index)
-        self.assertFalse('value' in index._fwd_index)
-        self.assertTrue('new_value' in index._fwd_index)
-        self.assertEqual(list(index._fwd_index['new_value']), [1])
-        self.assertEqual(list(index.unique_values()), ['new_value'])
+        index.index_doc(1, "value")
+        index.index_doc(1, "new_value")
+        assert index.indexed_count() == 1
+        assert index.word_count() == 1
+        assert 1 in index._rev_index
+        assert not ("value" in index._fwd_index)
+        assert "new_value" in index._fwd_index
+        assert list(index._fwd_index["new_value"]) == [1]
+        assert list(index.unique_values()) == ["new_value"]
 
     def test_unindex_doc_no_residual_fwd_values(self):
         index = self._makeOne()
-        index.index_doc(1, 'value')
-        index.unindex_doc(1) # doesn't raise
-        self.assertEqual(index.indexed_count(), 0)
-        self.assertEqual(index.word_count(), 0)
-        self.assertFalse(1 in index._rev_index)
-        self.assertFalse('value' in index._fwd_index)
-        self.assertEqual(len(index.unique_values()), 0)
+        index.index_doc(1, "value")
+        index.unindex_doc(1)  # doesn't raise
+        assert index.indexed_count() == 0
+        assert index.word_count() == 0
+        assert not (1 in index._rev_index)
+        assert not ("value" in index._fwd_index)
+        assert len(index.unique_values()) == 0
 
     def test_unindex_doc_w_residual_fwd_values(self):
         index = self._makeOne()
-        index.index_doc(1, 'value')
-        index.index_doc(2, 'value')
-        index.unindex_doc(1) # doesn't raise
-        self.assertEqual(index.indexed_count(), 1)
-        self.assertEqual(index.word_count(), 1)
-        self.assertFalse(1 in index._rev_index)
-        self.assertTrue(2 in index._rev_index)
-        self.assertTrue('value' in index._fwd_index)
-        self.assertEqual(list(index._fwd_index['value']), [2])
-        self.assertEqual(list(index.unique_values()), ['value'])
+        index.index_doc(1, "value")
+        index.index_doc(2, "value")
+        index.unindex_doc(1)  # doesn't raise
+        assert index.indexed_count() == 1
+        assert index.word_count() == 1
+        assert not (1 in index._rev_index)
+        assert 2 in index._rev_index
+        assert "value" in index._fwd_index
+        assert list(index._fwd_index["value"]) == [2]
+        assert list(index.unique_values()) == ["value"]
 
     def test_apply_two_tuple_miss(self):
         index = self._makeOne()
-        self.assertEqual(list(index.apply(('a', 'b'))), [])
+        assert list(index.apply(("a", "b"))) == []
 
     def test_apply_two_tuple_hit(self):
         index = self._makeOne()
-        index.index_doc(1, 'albatross')
-        self.assertEqual(list(index.apply(('a', 'b'))), [1])
+        index.index_doc(1, "albatross")
+        assert list(index.apply(("a", "b"))) == [1]
 
     def test_sort_w_limit_lt_1(self):
         index = self._makeOne()
-        self.assertRaises(ValueError,
-                          lambda: list(index.sort([1, 2, 3], limit=0)))
+        with pytest.raises(ValueError):
+            list(index.sort([1, 2, 3], limit=0))
 
     def test_sort_w_empty_index(self):
         index = self._makeOne()
-        self.assertEqual(
-            list(index.sort([1, 2, 3], raise_unsortable=False)), [])
+        assert list(index.sort([1, 2, 3], raise_unsortable=False)) == []
 
     def test_sort_w_empty_docids(self):
         index = self._makeOne()
-        index.index_doc(1, 'albatross')
-        self.assertEqual(list(index.sort([])), [])
+        index.index_doc(1, "albatross")
+        assert list(index.sort([])) == []
 
     def test_sort_w_missing_docids(self):
         from hypatia.exc import Unsortable
+
         index = self._makeOne()
-        index.index_doc(1, 'albatross')
-        gen = index.sort([1,3])
+        index.index_doc(1, "albatross")
+        gen = index.sort([1, 3])
         dids = []
         try:
             for did in gen:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [3])
-        else: # pragma: no cover
-            raise AssertionError('Unsortable not raised')
-        self.assertEqual(dids, [1])
+            assert list(e.docids) == [3]
+        else:  # pragma: no cover
+            raise AssertionError("Unsortable not raised")
+        assert dids == [1]
 
     def test_sort_w_missing_docids_raise_unsortable_False(self):
         index = self._makeOne()
-        index.index_doc(1, 'albatross')
-        gen = index.sort([1,3], raise_unsortable=False)
-        self.assertEqual(list(gen), [1])
+        index.index_doc(1, "albatross")
+        gen = index.sort([1, 3], raise_unsortable=False)
+        assert list(gen) == [1]
 
     def test_sort_force_nbest_w_missing_docids(self):
         from hypatia.interfaces import NBEST
         from hypatia.exc import Unsortable
+
         index = self._makeOne()
-        index.index_doc(1, 'albatross')
+        index.index_doc(1, "albatross")
         result = index.sort([2, 3], limit=10, sort_type=NBEST)
         dids = []
-        try: # pragma: no cover
+        try:  # pragma: no cover
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [2,3])
-        else: # pragma: no cover
-            raise AssertionError('Unsortable not raised')
-        self.assertEqual(dids, [])
+            assert list(e.docids) == [2, 3]
+        else:  # pragma: no cover
+            raise AssertionError("Unsortable not raised")
+        assert dids == []
 
     def test_sort_force_nbest_w_missing_docids_raise_unsortable_false(self):
         from hypatia.interfaces import NBEST
+
         index = self._makeOne()
-        index.index_doc(1, 'albatross')
-        result = index.sort([2, 3], limit=10, sort_type=NBEST,
-                            raise_unsortable=False)
-        self.assertEqual(list(result), [])
+        index.index_doc(1, "albatross")
+        result = index.sort([2, 3], limit=10, sort_type=NBEST, raise_unsortable=False)
+        assert list(result) == []
 
     def test_sort_default_w_missing_docids(self):
         from hypatia.exc import Unsortable
+
         index = self._makeOne()
-        index.index_doc(1, 'albatross')
+        index.index_doc(1, "albatross")
         result = index.sort([2, 3])
         dids = []
-        try: # pragma: no cover
+        try:  # pragma: no cover
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [2, 3])
-        else: # pragma: no cover
-            raise AssertionError('Unsortable not raised')
-        self.assertEqual(dids, [])
+            assert list(e.docids) == [2, 3]
+        else:  # pragma: no cover
+            raise AssertionError("Unsortable not raised")
+        assert dids == []
 
     def test_sort_default_w_missing_docids_raise_unsortable_false(self):
         index = self._makeOne()
-        index.index_doc(1, 'albatross')
-        self.assertEqual(list(index.sort([2, 3], raise_unsortable=False)), [])
+        index.index_doc(1, "albatross")
+        assert list(index.sort([2, 3], raise_unsortable=False)) == []
 
     def test_sort_default_nolimit(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1)
-        self.assertEqual(list(result), [5, 2, 1, 3, 4])
+        assert list(result) == [5, 2, 1, 3, 4]
 
     def test_sort_default_withlimit(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, limit=3)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_optimal_means_None(self):
         from hypatia.interfaces import OPTIMAL
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, sort_type=OPTIMAL)
-        self.assertEqual(list(result), [5, 2, 1, 3, 4])
+        assert list(result) == [5, 2, 1, 3, 4]
 
     def test_sort_stable_means_timsort(self):
         from hypatia.interfaces import STABLE
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, sort_type=STABLE)
-        self.assertEqual(list(result), [5, 2, 1, 3, 4])
-        
+        assert list(result) == [5, 2, 1, 3, 4]
+
     def test_sort_nbest(self):
         from hypatia.interfaces import NBEST
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, limit=3, sort_type=NBEST)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_nbest_reverse(self):
         from hypatia.interfaces import NBEST
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, reverse=True, limit=3, sort_type=NBEST)
-        self.assertEqual(list(result), [4, 3, 1])
+        assert list(result) == [4, 3, 1]
 
     def test_sort_nbest_missing_limited(self):
         from hypatia.interfaces import NBEST
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
         result = index.sort(c1, limit=3, sort_type=NBEST)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_nbest_missing_unlimited(self):
         from hypatia.interfaces import NBEST
         from hypatia.exc import Unsortable
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
@@ -299,14 +319,15 @@ class FieldIndexTests(unittest.TestCase):
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [99])
-        else: # pragma: no cover
-            raise AssertionError('Unsortable not raised')
-        self.assertEqual(dids, [5, 2, 1, 3, 4])
+            assert list(e.docids) == [99]
+        else:  # pragma: no cover
+            raise AssertionError("Unsortable not raised")
+        assert dids == [5, 2, 1, 3, 4]
 
     def test_sort_nbest_missing_reverse_withlimit(self):
         from hypatia.interfaces import NBEST
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
@@ -315,12 +336,13 @@ class FieldIndexTests(unittest.TestCase):
         for did in result:
             dids.append(did)
         # Unsortable not raised because generator not totally unwound
-        self.assertEqual(dids, [4, 3, 1])
+        assert dids == [4, 3, 1]
 
     def test_sort_nbest_missing_reverse_unlimited(self):
         from hypatia.interfaces import NBEST
         from hypatia.exc import Unsortable
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
@@ -330,38 +352,43 @@ class FieldIndexTests(unittest.TestCase):
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [99])
-        else: # pragma: no cover
-            raise AssertionError('Unsortable not raised')
-        self.assertEqual(dids, [4, 3, 1, 2, 5])
-        
+            assert list(e.docids) == [99]
+        else:  # pragma: no cover
+            raise AssertionError("Unsortable not raised")
+        assert dids == [4, 3, 1, 2, 5]
+
     def test_sort_nodocids(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet()
         result = index.sort(c1)
-        self.assertEqual(list(result), [])
+        assert list(result) == []
 
     def test_sort_badlimit(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
-        self.assertRaises(ValueError, index.sort, c1, limit=0)
+        with pytest.raises(ValueError):
+            index.sort(c1, limit=0)
 
     def test_ctor_callback_discriminator(self):
         def _discriminator(obj, default):
             """ """
+
         index = self._makeOne(discriminator=_discriminator)
-        self.assertTrue(index.discriminator is _discriminator)
+        assert index.discriminator is _discriminator
 
     def test_ctor_string_discriminator(self):
-        index = self._makeOne(discriminator='abc')
-        self.assertEqual(index.discriminator, 'abc')
+        index = self._makeOne(discriminator="abc")
+        assert index.discriminator == "abc"
 
     def test_ctor_bad_discriminator(self):
-        self.assertRaises(ValueError, self._makeOne, object())
+        with pytest.raises(ValueError):
+            self._makeOne(object())
 
     def test_reindex_doc_doesnt_unindex(self):
         index = self._makeOne()
@@ -372,115 +399,128 @@ class FieldIndexTests(unittest.TestCase):
     def test_reindex_doc_w_existing_docid_same_value(self):
         index = self._makeOne()
         index.index_doc(5, 1)
-        self.assertEqual(index.indexed_count(), 1)
-        self.assertEqual(index._rev_index[5], 1)
+        assert index.indexed_count() == 1
+        assert index._rev_index[5] == 1
         index.reindex_doc(5, 1)
-        self.assertEqual(index.indexed_count(), 1)
-        self.assertEqual(index._rev_index[5], 1)
+        assert index.indexed_count() == 1
+        assert index._rev_index[5] == 1
 
     def test_reindex_doc_w_existing_docid_different_value(self):
         index = self._makeOne()
         index.index_doc(5, 1)
-        self.assertEqual(index.indexed_count(), 1)
+        assert index.indexed_count() == 1
         index.reindex_doc(5, 2)
-        self.assertEqual(index.indexed_count(), 1)
-        self.assertEqual(index._rev_index[5], 2)
+        assert index.indexed_count() == 1
+        assert index._rev_index[5] == 2
 
     def test_reindex_doc_w_new_docid(self):
         index = self._makeOne()
         index.index_doc(5, 1)
-        self.assertEqual(index.indexed_count(), 1)
+        assert index.indexed_count() == 1
         index.reindex_doc(6, 2)
-        self.assertEqual(index.indexed_count(), 2)
-        self.assertEqual(index._rev_index[5], 1)
-        self.assertEqual(index._rev_index[6], 2)
+        assert index.indexed_count() == 2
+        assert index._rev_index[5] == 1
+        assert index._rev_index[6] == 2
 
     def test_unindex_doc_nonesuch(self):
         index = self._makeOne()
         index.index_doc(5, 1)
         index.unindex_doc(6)
-        self.assertEqual(index.indexed_count(), 1)
+        assert index.indexed_count() == 1
 
     def test_unindex_doc_no_other_docids_for_value(self):
         index = self._makeOne()
         index.index_doc(5, 1)
         index.unindex_doc(5)
-        self.assertEqual(index.indexed_count(), 0)
-        self.assertFalse(5 in index._rev_index)
-        self.assertFalse(1 in index._fwd_index)
+        assert index.indexed_count() == 0
+        assert not (5 in index._rev_index)
+        assert not (1 in index._fwd_index)
 
     def test_unindex_doc_w_other_docids_for_value(self):
         index = self._makeOne()
         index.index_doc(5, 1)
         index.index_doc(6, 1)
         index.unindex_doc(5)
-        self.assertEqual(index.indexed_count(), 1)
-        self.assertFalse(5 in index._rev_index)
-        self.assertTrue(1 in index._fwd_index)
+        assert index.indexed_count() == 1
+        assert not (5 in index._rev_index)
+        assert 1 in index._fwd_index
 
     def test_sort_no_docids(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet()
         result = index.sort(c1)
-        self.assertEqual(list(result), [])
+        assert list(result) == []
 
     def test_sort_no_docs_raise_unsortable_False(self):
         index = self._makeOne()
         from BTrees.IFBTree import IFSet
+
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, raise_unsortable=False)
-        self.assertEqual(list(result), [])
+        assert list(result) == []
 
     def test_sort_no_docs_raise_unsortable_True(self):
         from hypatia.exc import Unsortable
+
         index = self._makeOne()
         from BTrees.IFBTree import IFSet
+
         c1 = IFSet([1, 2, 3, 4, 5])
-        self.assertRaises(Unsortable, index.sort, c1, raise_unsortable=True)
-        
+        with pytest.raises(Unsortable):
+            index.sort(c1, raise_unsortable=True)
+
     def test_sort_bad_limit(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
-        self.assertRaises(ValueError, index.sort, c1, limit=0)
+        with pytest.raises(ValueError):
+            index.sort(c1, limit=0)
 
     def test_sort_bad_sort_type(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
-        self.assertRaises(ValueError, index.sort, c1, sort_type='nonesuch')
+        with pytest.raises(ValueError):
+            index.sort(c1, sort_type="nonesuch")
 
     def test_sort_bad_sort_type_reverse_fwscan(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import FWSCAN
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
-        self.assertRaises(ValueError,
-                          index.sort, c1, reverse=True, sort_type=FWSCAN)
+        with pytest.raises(ValueError):
+            index.sort(c1, reverse=True, sort_type=FWSCAN)
 
     def test_sort_bad_sort_type_reverse(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
-        self.assertRaises(ValueError,
-                          index.sort, c1, reverse=True, sort_type='nonesuch')
+        with pytest.raises(ValueError):
+            index.sort(c1, reverse=True, sort_type="nonesuch")
 
     def test_sort_noforce_no_limit(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1)
-        self.assertEqual(list(result), [5, 2, 1, 3, 4])
+        assert list(result) == [5, 2, 1, 3, 4]
 
     def test_sort_noforce_timsort(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         # Add enough items to make 'fwscan_wins' return False.
@@ -489,10 +529,11 @@ class FieldIndexTests(unittest.TestCase):
         c1 = IFSet([1, 2, 3, 4, 5])
         # No 'limit' means timsort
         result = index.sort(c1)
-        self.assertEqual(list(result), [5, 2, 1, 3, 4])
+        assert list(result) == [5, 2, 1, 3, 4]
 
     def test_sort_noforce_nbest(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         # Add enough items to make 'fwscan_wins' return False.
@@ -501,34 +542,38 @@ class FieldIndexTests(unittest.TestCase):
         c1 = IFSet([1, 2, 3, 4, 5])
         # Reasonable 'limit' means nbest
         result = index.sort(c1, limit=3)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_noforce_w_limit(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, limit=3)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_noforce_reverse_no_limit(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, reverse=True)
-        self.assertEqual(list(result), [4, 3, 1, 2, 5])
+        assert list(result) == [4, 3, 1, 2, 5]
 
     def test_sort_noforce_reverse_w_limit(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, reverse=True, limit=3)
-        self.assertEqual(list(result), [4, 3, 1])
+        assert list(result) == [4, 3, 1]
 
     def test_sort_noforce_reverse_w_limit_timsort(self):
         from BTrees.IFBTree import IFSet
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
@@ -536,23 +581,25 @@ class FieldIndexTests(unittest.TestCase):
         for i in range(100, 10000):
             index.index_doc(i, i)
             c1.insert(i)
-        result = index.sort(c1, reverse=True, limit=301) # waaa
-        self.assertEqual(list(result), list(range(9999, 9698, -1)))
+        result = index.sort(c1, reverse=True, limit=301)  # waaa
+        assert list(result) == list(range(9999, 9698, -1))
 
     def test_sort_force_fwscan_no_limit(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import FWSCAN
+
         index = self._makeOne()
         index.force_scan = True
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, sort_type=FWSCAN)
-        self.assertEqual(list(result), [5, 2, 1, 3, 4])
+        assert list(result) == [5, 2, 1, 3, 4]
 
     def test_sort_force_fwscan_missing_docid(self):
         from hypatia.exc import Unsortable
         from BTrees.IFBTree import IFSet
         from ..interfaces import FWSCAN
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
@@ -562,43 +609,47 @@ class FieldIndexTests(unittest.TestCase):
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [99])
-        else: # pragma: no cover
-            raise AssertionError('Unsortable not raised')
-        self.assertEqual(dids, [5, 2, 1, 3, 4]) # 99 not present
-        
+            assert list(e.docids) == [99]
+        else:  # pragma: no cover
+            raise AssertionError("Unsortable not raised")
+        assert dids == [5, 2, 1, 3, 4]  # 99 not present
+
     def test_sort_force_fwscan_missing_docid_raise_unsortable_false(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import FWSCAN
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
         result = index.sort(c1, sort_type=FWSCAN, raise_unsortable=False)
         r = list(result)
-        self.assertEqual(r, [5, 2, 1, 3, 4]) # 99 not present
+        assert r == [5, 2, 1, 3, 4]  # 99 not present
 
     def test_sort_force_fwscan_w_limit(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import FWSCAN
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, limit=3, sort_type=FWSCAN)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_force_timsort_no_limit(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import TIMSORT
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, sort_type=TIMSORT)
-        self.assertEqual(list(result), [5, 2, 1, 3, 4])
+        assert list(result) == [5, 2, 1, 3, 4]
 
     def test_sort_force_timsort_missing_docid(self):
         from hypatia.exc import Unsortable
         from BTrees.IFBTree import IFSet
         from ..interfaces import TIMSORT
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
@@ -608,43 +659,47 @@ class FieldIndexTests(unittest.TestCase):
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [99])
-        else: # pragma: no cover
-            raise AssertionError('Unsortable not raised')
-        self.assertEqual(dids, [5, 2, 1, 3, 4]) # 99 not present
-        
+            assert list(e.docids) == [99]
+        else:  # pragma: no cover
+            raise AssertionError("Unsortable not raised")
+        assert dids == [5, 2, 1, 3, 4]  # 99 not present
+
     def test_sort_force_timsort_missing_docid_raise_unsortable_false(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import TIMSORT
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
         result = index.sort(c1, sort_type=TIMSORT, raise_unsortable=False)
         r = list(result)
-        self.assertEqual(r, [5, 2, 1, 3, 4]) # 99 not present
+        assert r == [5, 2, 1, 3, 4]  # 99 not present
 
     def test_sort_force_timsort_w_limit(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import TIMSORT
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, limit=3, sort_type=TIMSORT)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_force_timsort_reverse_nolimit(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import TIMSORT
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, reverse=True, sort_type=TIMSORT)
-        self.assertEqual(list(result), [4, 3, 1, 2, 5])
+        assert list(result) == [4, 3, 1, 2, 5]
 
     def test_sort_force_timsort_reverse_missing_docid(self):
         from hypatia.exc import Unsortable
         from BTrees.IFBTree import IFSet
         from ..interfaces import TIMSORT
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
@@ -654,53 +709,57 @@ class FieldIndexTests(unittest.TestCase):
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(e.docids, [99])
-        else: # pragma: no cover
-            raise AssertionError('Unsortable not raised')
-        self.assertEqual(dids, [4, 3, 1, 2, 5]) # 99 not present
+            assert e.docids == [99]
+        else:  # pragma: no cover
+            raise AssertionError("Unsortable not raised")
+        assert dids == [4, 3, 1, 2, 5]  # 99 not present
 
     def test_sort_force_timsort_reverse_missing_docid_raise_unsortable_f(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import TIMSORT
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
-        result = index.sort(
-            c1, reverse=True, sort_type=TIMSORT, raise_unsortable=False
-            )
+        result = index.sort(c1, reverse=True, sort_type=TIMSORT, raise_unsortable=False)
         r = list(result)
-        self.assertEqual(r, [4, 3, 1, 2, 5]) # 99 not present
-        
+        assert r == [4, 3, 1, 2, 5]  # 99 not present
+
     def test_sort_force_timsort_reverse_withlimit(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import TIMSORT
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, reverse=True, limit=3, sort_type=TIMSORT)
-        self.assertEqual(list(result), [4, 3, 1])
+        assert list(result) == [4, 3, 1]
 
     def test_sort_force_nbest_no_limit_raises(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import NBEST
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
-        self.assertRaises(ValueError, index.sort, c1, sort_type=NBEST)
+        with pytest.raises(ValueError):
+            index.sort(c1, sort_type=NBEST)
 
     def test_sort_force_nbest(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import NBEST
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, limit=3, sort_type=NBEST)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_force_nbest_largelimit(self):
         from hypatia.exc import Unsortable
         from BTrees.IFBTree import IFSet
         from ..interfaces import NBEST
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
@@ -710,31 +769,34 @@ class FieldIndexTests(unittest.TestCase):
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [99])
-        self.assertEqual(dids, [5, 2, 1, 3, 4])
-        
+            assert list(e.docids) == [99]
+        assert dids == [5, 2, 1, 3, 4]
+
     def test_sort_force_nbest_reverse_no_limit_raises(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import NBEST
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
-        self.assertRaises(ValueError,
-                          index.sort, c1, reverse=True, sort_type=NBEST)
+        with pytest.raises(ValueError):
+            index.sort(c1, reverse=True, sort_type=NBEST)
 
     def test_sort_force_nbest_reverse(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import NBEST
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5])
         result = index.sort(c1, reverse=True, limit=3, sort_type=NBEST)
-        self.assertEqual(list(result), [4, 3, 1])
+        assert list(result) == [4, 3, 1]
 
     def test_sort_force_nbest_reverse_largelimit(self):
         from hypatia.exc import Unsortable
         from BTrees.IFBTree import IFSet
         from ..interfaces import NBEST
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
@@ -744,53 +806,58 @@ class FieldIndexTests(unittest.TestCase):
             for did in result:
                 dids.append(did)
         except Unsortable as e:
-            self.assertEqual(list(e.docids), [99])
-        self.assertEqual(dids, [4, 3, 1, 2, 5])
+            assert list(e.docids) == [99]
+        assert dids == [4, 3, 1, 2, 5]
 
     def test_sort_force_nbest_missing_docid(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import NBEST
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
         result = index.sort(c1, limit=3, sort_type=NBEST)
-        self.assertEqual(list(result), [5, 2, 1])
+        assert list(result) == [5, 2, 1]
 
     def test_sort_force_nbest_reverse_missing_docid(self):
         from BTrees.IFBTree import IFSet
         from ..interfaces import NBEST
+
         index = self._makeOne()
         self._populateIndex(index)
         c1 = IFSet([1, 2, 3, 4, 5, 99])
         result = index.sort(c1, reverse=True, limit=3, sort_type=NBEST)
-        self.assertEqual(list(result), [4, 3, 1])
+        assert list(result) == [4, 3, 1]
 
     def test_search_single_range_querymember_or(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
         from hypatia import RangeValue
-        result = index.search([RangeValue(1,1)])
+
+        result = index.search([RangeValue(1, 1)])
         result = sorted(list(result))
-        self.assertEqual(result, [5, 50])
+        assert result == [5, 50]
 
     def test_search_double_range_querymember_or(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
         from hypatia import RangeValue
-        result = index.search([RangeValue(1,1), RangeValue(1,2)])
+
+        result = index.search([RangeValue(1, 1), RangeValue(1, 2)])
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_search_double_range_querymember_and(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
         from hypatia import RangeValue
-        result = index.search([RangeValue(1,1), RangeValue(1,2)], 'and')
+
+        result = index.search([RangeValue(1, 1), RangeValue(1, 2)], "and")
         result = sorted(list(result))
-        self.assertEqual(result, [5, 50])
+        assert result == [5, 50]
 
     def test_search_single_int_querymember_or(self):
         index = self._makeOne()
@@ -798,7 +865,7 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.search([1])
         result = sorted(list(result))
-        self.assertEqual(result, [5, 50])
+        assert result == [5, 50]
 
     def test_search_double_int_querymember_or(self):
         index = self._makeOne()
@@ -806,106 +873,115 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.search([1, 2])
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_search_double_int_querymember_and(self):
         # this is a nonsensical query
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.search([1, 2], 'and')
+        result = index.search([1, 2], "and")
         result = sorted(list(result))
-        self.assertEqual(result, [])
+        assert result == []
 
     def test_apply_dict_single_range(self):
         from hypatia import RangeValue
+
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query': RangeValue(1,2)})
+        result = index.apply({"query": RangeValue(1, 2)})
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_apply_dict_operator_or_with_ranges(self):
         from hypatia import RangeValue
+
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query':[RangeValue(1,1), RangeValue(1,2)],
-                              'operator':'or'})
+        result = index.apply(
+            {"query": [RangeValue(1, 1), RangeValue(1, 2)], "operator": "or"}
+        )
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_apply_dict_operator_and_with_ranges_and(self):
         from hypatia import RangeValue
+
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query':[RangeValue(1,1), RangeValue(1,2)],
-                              'operator':'and'})
+        result = index.apply(
+            {"query": [RangeValue(1, 1), RangeValue(1, 2)], "operator": "and"}
+        )
         result = sorted(list(result))
-        self.assertEqual(result, [5, 50])
+        assert result == [5, 50]
 
     def test_apply_dict_operator_and_with_ranges_or(self):
         from hypatia import RangeValue
+
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query':[RangeValue(1,1), RangeValue(1,2)],
-                              'operator':'or'})
+        result = index.apply(
+            {"query": [RangeValue(1, 1), RangeValue(1, 2)], "operator": "or"}
+        )
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_apply_dict_operator_or_with_single_int(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query':1})
+        result = index.apply({"query": 1})
         result = sorted(list(result))
-        self.assertEqual(result, [5, 50])
+        assert result == [5, 50]
 
     def test_apply_dict_operator_or_with_list_of_ints_or(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query':[1,2]})
+        result = index.apply({"query": [1, 2]})
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_apply_dict_operator_or_with_list_of_ints_and(self):
         # nonsensical query
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query':[1, 2], 'operator':'and'})
+        result = index.apply({"query": [1, 2], "operator": "and"})
         result = sorted(list(result))
-        self.assertEqual(result, [])
+        assert result == []
 
     def test_apply_dict_operator_or_with_int_and_range_or(self):
         from hypatia import RangeValue
+
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query':[1, RangeValue(1,2)], 'operator':'or'})
+        result = index.apply({"query": [1, RangeValue(1, 2)], "operator": "or"})
         result = sorted(list(result))
-        self.assertEqual(result, [2,5,50])
+        assert result == [2, 5, 50]
 
     def test_apply_dict_operator_or_with_int_and_range_and(self):
         from hypatia import RangeValue
+
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply({'query':[1, RangeValue(1,2)], 'operator':'and'})
+        result = index.apply({"query": [1, RangeValue(1, 2)], "operator": "and"})
         result = sorted(list(result))
-        self.assertEqual(result, [5,50])
+        assert result == [5, 50]
 
     def test_apply_nondict_2tuple(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply((1,2))
+        result = index.apply((1, 2))
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5,50])
+        assert result == [2, 5, 50]
 
     def test_apply_nondict_int(self):
         index = self._makeOne()
@@ -913,15 +989,15 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.apply(1)
         result = sorted(list(result))
-        self.assertEqual(result, [5, 50])
+        assert result == [5, 50]
 
     def test_apply_list(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(50, 1)
-        result = index.apply([1,2])
+        result = index.apply([1, 2])
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_applyEq(self):
         index = self._makeOne()
@@ -929,14 +1005,14 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.applyEq(1)
         result = sorted(list(result))
-        self.assertEqual(result, [5, 50])
+        assert result == [5, 50]
 
     def test_applyNotEq(self):
         index = self._makeOne()
         self._populateIndex(index)
         result = index.applyNotEq(1)
         result = sorted(list(result))
-        self.assertEqual(result, [1,2,3,4,6,7,8,9,10,11])
+        assert result == [1, 2, 3, 4, 6, 7, 8, 9, 10, 11]
 
     def test_applyNotEq_returns_unindexed_docs(self):
         def discriminator(obj, default):
@@ -947,17 +1023,17 @@ class FieldIndexTests(unittest.TestCase):
         index = self._makeOne(discriminator=discriminator)
         self._populateIndex(index)
         index.index_doc(50, 1)
-        index.index_doc(51, '1')
+        index.index_doc(51, "1")
         result = index.applyNotEq(1)
         result = sorted(list(result))
-        self.assertEqual(result, [1,2,3,4,6,7,8,9,10,11,51])
+        assert result == [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 51]
 
     def test_applyNotEq_nothing_indexed(self):
-        index = self._makeOne(discriminator='foo')
+        index = self._makeOne(discriminator="foo")
         self._populateIndex(index)
         result = index.applyNotEq(1)
         result = sorted(list(result))
-        self.assertEqual(result, [1,2,3,4,5,6,7,8,9,10,11])
+        assert result == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
     def test_applyGe(self):
         index = self._makeOne()
@@ -965,7 +1041,7 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.applyGe(10)
         result = sorted(list(result))
-        self.assertEqual(result, [10, 11])
+        assert result == [10, 11]
 
     def test_applyGt(self):
         index = self._makeOne()
@@ -973,7 +1049,7 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.applyGt(10)
         result = sorted(list(result))
-        self.assertEqual(result, [10])
+        assert result == [10]
 
     def test_applyLe(self):
         index = self._makeOne()
@@ -981,7 +1057,7 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.applyLe(2)
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_applyLt(self):
         index = self._makeOne()
@@ -989,7 +1065,7 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.applyLt(2)
         result = sorted(list(result))
-        self.assertEqual(result, [5, 50])
+        assert result == [5, 50]
 
     def test_applyAny(self):
         index = self._makeOne()
@@ -997,7 +1073,7 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.applyAny([1, 2, 60])
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 50])
+        assert result == [2, 5, 50]
 
     def test_applyAny_noresults(self):
         index = self._makeOne()
@@ -1005,7 +1081,7 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.applyAny([60, 70])
         result = sorted(list(result))
-        self.assertEqual(result, [])
+        assert result == []
 
     def test_applyNotAny(self):
         index = self._makeOne()
@@ -1013,363 +1089,366 @@ class FieldIndexTests(unittest.TestCase):
         index.index_doc(50, 1)
         result = index.applyNotAny([1, 2, 60])
         result = sorted(list(result))
-        self.assertEqual(result, [1, 3, 4, 6, 7, 8, 9, 10, 11])
+        assert result == [1, 3, 4, 6, 7, 8, 9, 10, 11]
 
     def test_applyInRange_inclusive_inclusive(self):
         index = self._makeOne()
         self._populateIndex(index)
         result = index.applyInRange(3, 7)
         result = sorted(list(result))
-        self.assertEqual(result, [1, 3, 4, 8, 9])
+        assert result == [1, 3, 4, 8, 9]
 
     def test_applyInRange_inclusive_exclusive(self):
         index = self._makeOne()
         self._populateIndex(index)
         result = index.applyInRange(3, 7, excludemax=True)
         result = sorted(list(result))
-        self.assertEqual(result, [1, 3, 4, 8])
+        assert result == [1, 3, 4, 8]
 
     def test_applyInRange_exclusive_inclusive(self):
         index = self._makeOne()
         self._populateIndex(index)
         result = index.applyInRange(3, 7, excludemin=True)
         result = sorted(list(result))
-        self.assertEqual(result, [3, 4, 8, 9])
+        assert result == [3, 4, 8, 9]
 
     def test_applyInRange_exclusive_exclusive(self):
         index = self._makeOne()
         self._populateIndex(index)
         result = index.applyInRange(3, 7, excludemin=True, excludemax=True)
         result = sorted(list(result))
-        self.assertEqual(result, [3, 4, 8])
+        assert result == [3, 4, 8]
 
     def test_applyNotInRange(self):
         index = self._makeOne()
         self._populateIndex(index)
         result = index.applyNotInRange(3, 7)
         result = sorted(list(result))
-        self.assertEqual(result, [2, 5, 6, 7, 10, 11])
+        assert result == [2, 5, 6, 7, 10, 11]
 
     def test_docids(self):
         index = self._makeOne()
         self._populateIndex(index)
-        self.assertEqual(
-            set(index.docids()),
-            set((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)))
+        assert set(index.docids()) == set((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
 
     def test_unindex_doc_removes_from_docids(self):
         index = self._makeOne()
         index.index_doc(20, _marker)
         index.unindex_doc(20)
-        self.assertFalse(20 in index.docids())
+        assert not (20 in index.docids())
 
     def test_index_doc_value_is_marker(self):
         index = self._makeOne()
         # this should never be raised
-        index.unindex_doc = lambda *arg, **kw: 0/1
+        index.unindex_doc = lambda *arg, **kw: 0 / 1
         index.index_doc(1, _marker)
-        self.assertTrue(1 in index._not_indexed)
+        assert 1 in index._not_indexed
         index.index_doc(1, _marker)
-        self.assertTrue(1 in index._not_indexed)
+        assert 1 in index._not_indexed
 
     def test_index_doc_then_missing_value(self):
         index = self._makeOne()
         self._populateIndex(index)
-        self.assertEqual(set([3]), set(index.applyEq(4)))
-        self.assertTrue(3 in index.docids())
+        assert set([3]) == set(index.applyEq(4))
+        assert 3 in index.docids()
         index.index_doc(3, _marker)
-        self.assertEqual(set(), set(index.applyEq(4)))
-        self.assertTrue(3 in index.docids())
+        assert set() == set(index.applyEq(4))
+        assert 3 in index.docids()
 
     def test_index_doc_missing_value_then_with_value(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(3, _marker)
-        self.assertEqual(set(), set(index.applyEq(4)))
-        self.assertTrue(3 in index.docids())
+        assert set() == set(index.applyEq(4))
+        assert 3 in index.docids()
         index.index_doc(3, 42)
-        self.assertEqual(set([3]), set(index.applyEq(42)))
-        self.assertTrue(3 in index.docids())
+        assert set([3]) == set(index.applyEq(42))
+        assert 3 in index.docids()
 
     def test_index_doc_missing_value_then_unindex(self):
         index = self._makeOne()
         self._populateIndex(index)
         index.index_doc(3, _marker)
-        self.assertEqual(set(), set(index.applyEq(4)))
-        self.assertTrue(3 in index.docids())
+        assert set() == set(index.applyEq(4))
+        assert 3 in index.docids()
         index.unindex_doc(3)
-        self.assertEqual(set(), set(index.applyEq(4)))
-        self.assertFalse(3 in index.docids())
+        assert set() == set(index.applyEq(4))
+        assert not (3 in index.docids())
 
     def test_docids_with_indexed_and_not_indexed(self):
         index = self._makeOne()
         index.index_doc(1, 1)
         index.index_doc(2, _marker)
-        self.assertEqual(set([1, 2]), set(index.docids()))
+        assert set([1, 2]) == set(index.docids())
 
     def test_not_indexed_count(self):
         index = self._makeOne()
         index.index_doc(1, 1)
         index.index_doc(2, _marker)
-        self.assertEqual(index.not_indexed_count(), 1)
+        assert index.not_indexed_count() == 1
 
     def test_eq(self):
         from .. import query
+
         index = self._makeOne()
         result = index.eq(1)
-        self.assertEqual(result.__class__, query.Eq)
-        self.assertEqual(result._value, 1)
-        
+        assert result.__class__ == query.Eq
+        assert result._value == 1
+
     def test_noteq(self):
         from .. import query
+
         index = self._makeOne()
         result = index.noteq(1)
-        self.assertEqual(result.__class__, query.NotEq)
-        self.assertEqual(result._value, 1)
+        assert result.__class__ == query.NotEq
+        assert result._value == 1
 
     def test_ge(self):
         from .. import query
+
         index = self._makeOne()
         result = index.ge(1)
-        self.assertEqual(result.__class__, query.Ge)
-        self.assertEqual(result._value, 1)
+        assert result.__class__ == query.Ge
+        assert result._value == 1
 
     def test_le(self):
         from .. import query
+
         index = self._makeOne()
         result = index.le(1)
-        self.assertEqual(result.__class__, query.Le)
-        self.assertEqual(result._value, 1)
-        
+        assert result.__class__ == query.Le
+        assert result._value == 1
+
     def test_gt(self):
         from .. import query
+
         index = self._makeOne()
         result = index.gt(1)
-        self.assertEqual(result.__class__, query.Gt)
-        self.assertEqual(result._value, 1)
+        assert result.__class__ == query.Gt
+        assert result._value == 1
 
     def test_lt(self):
         from .. import query
+
         index = self._makeOne()
         result = index.lt(1)
-        self.assertEqual(result.__class__, query.Lt)
-        self.assertEqual(result._value, 1)
+        assert result.__class__ == query.Lt
+        assert result._value == 1
 
     def test_any(self):
         from .. import query
+
         index = self._makeOne()
         result = index.any(1)
-        self.assertEqual(result.__class__, query.Any)
-        self.assertEqual(result._value, 1)
+        assert result.__class__ == query.Any
+        assert result._value == 1
 
     def test_notany(self):
         from .. import query
+
         index = self._makeOne()
         result = index.notany(1)
-        self.assertEqual(result.__class__, query.NotAny)
-        self.assertEqual(result._value, 1)
+        assert result.__class__ == query.NotAny
+        assert result._value == 1
 
     def test_inrange(self):
         from .. import query
+
         index = self._makeOne()
         result = index.inrange(1, 2)
-        self.assertEqual(result.__class__, query.InRange)
-        self.assertEqual(result._start, 1)
-        self.assertEqual(result._end, 2)
+        assert result.__class__ == query.InRange
+        assert result._start == 1
+        assert result._end == 2
 
     def test_notinrange(self):
         from .. import query
+
         index = self._makeOne()
         result = index.notinrange(1, 2)
-        self.assertEqual(result.__class__, query.NotInRange)
-        self.assertEqual(result._start, 1)
-        self.assertEqual(result._end, 2)
+        assert result.__class__ == query.NotInRange
+        assert result._start == 1
+        assert result._end == 2
 
-class Test_fwscan_wins(unittest.TestCase):
 
+class Test_fwscan_wins:
     def _callFUT(self, limit, rlen, numdocs):
         from . import fwscan_wins
+
         return fwscan_wins(limit, rlen, numdocs)
 
     def test_numdocs_zero_raises(self):
-        self.assertRaises(ZeroDivisionError, self._callFUT, None, 100, 0)
+        with pytest.raises(ZeroDivisionError):
+            self._callFUT(None, 100, 0)
 
     def test_no_limit_rlen_gt_one_fourth_numdocs(self):
-        self.assertTrue(self._callFUT(None, 25, 100))
-        self.assertTrue(self._callFUT(None, 26, 100))
-        self.assertTrue(self._callFUT(None, 50, 100))
-        self.assertTrue(self._callFUT(None, 75, 100))
-        self.assertTrue(self._callFUT(None, 99, 100))
+        assert self._callFUT(None, 25, 100)
+        assert self._callFUT(None, 26, 100)
+        assert self._callFUT(None, 50, 100)
+        assert self._callFUT(None, 75, 100)
+        assert self._callFUT(None, 99, 100)
 
     def test_no_limit_rlen_ge_one_fourth_numdocs(self):
-        self.assertFalse(self._callFUT(None, 24, 100))
-        self.assertFalse(self._callFUT(None, 23, 100))
-        self.assertFalse(self._callFUT(None, 15, 100))
-        self.assertFalse(self._callFUT(None, 10, 100))
-        self.assertFalse(self._callFUT(None, 5, 100))
-        self.assertFalse(self._callFUT(None, 2, 100))
-        self.assertFalse(self._callFUT(None, 1, 100))
+        assert not self._callFUT(None, 24, 100)
+        assert not self._callFUT(None, 23, 100)
+        assert not self._callFUT(None, 15, 100)
+        assert not self._callFUT(None, 10, 100)
+        assert not self._callFUT(None, 5, 100)
+        assert not self._callFUT(None, 2, 100)
+        assert not self._callFUT(None, 1, 100)
 
     def test_w_limit_docratio_ge_512_lt_1024_over_div(self):
-        self.assertTrue(self._callFUT(1, 512, 65536))
-        self.assertTrue(self._callFUT(2, 512, 65536))
-        self.assertTrue(self._callFUT(3, 512, 65536))
-        self.assertTrue(self._callFUT(4, 512, 65536))
-        self.assertFalse(self._callFUT(5, 512, 65536))
-        self.assertTrue(self._callFUT(1, 1023, 65536))
-        self.assertTrue(self._callFUT(2, 1023, 65536))
-        self.assertTrue(self._callFUT(3, 1023, 65536))
-        self.assertTrue(self._callFUT(4, 1023, 65536))
-        self.assertFalse(self._callFUT(5, 1023, 65536))
+        assert self._callFUT(1, 512, 65536)
+        assert self._callFUT(2, 512, 65536)
+        assert self._callFUT(3, 512, 65536)
+        assert self._callFUT(4, 512, 65536)
+        assert not self._callFUT(5, 512, 65536)
+        assert self._callFUT(1, 1023, 65536)
+        assert self._callFUT(2, 1023, 65536)
+        assert self._callFUT(3, 1023, 65536)
+        assert self._callFUT(4, 1023, 65536)
+        assert not self._callFUT(5, 1023, 65536)
 
     def test_w_limit_docratio_ge_1024_lt_2048_over_div(self):
-        self.assertTrue(self._callFUT(1, 1024, 65536))
-        self.assertTrue(self._callFUT(2, 1024, 65536))
-        self.assertTrue(self._callFUT(31, 1024, 65536))
-        self.assertTrue(self._callFUT(32, 1024, 65536))
-        self.assertFalse(self._callFUT(33, 1024, 65536))
-        self.assertTrue(self._callFUT(1, 2047, 65536))
-        self.assertTrue(self._callFUT(2, 2047, 65536))
-        self.assertTrue(self._callFUT(31, 2047, 65536))
-        self.assertTrue(self._callFUT(32, 2047, 65536))
-        self.assertFalse(self._callFUT(33, 2047, 65536))
+        assert self._callFUT(1, 1024, 65536)
+        assert self._callFUT(2, 1024, 65536)
+        assert self._callFUT(31, 1024, 65536)
+        assert self._callFUT(32, 1024, 65536)
+        assert not self._callFUT(33, 1024, 65536)
+        assert self._callFUT(1, 2047, 65536)
+        assert self._callFUT(2, 2047, 65536)
+        assert self._callFUT(31, 2047, 65536)
+        assert self._callFUT(32, 2047, 65536)
+        assert not self._callFUT(33, 2047, 65536)
 
     def test_w_limit_docratio_ge_2048_lt_4096_over_div(self):
-        self.assertTrue(self._callFUT(1, 2048, 65536))
-        self.assertTrue(self._callFUT(2, 2048, 65536))
-        self.assertTrue(self._callFUT(127, 2048, 65536))
-        self.assertTrue(self._callFUT(128, 2048, 65536))
-        self.assertFalse(self._callFUT(129, 2048, 65536))
-        self.assertTrue(self._callFUT(1, 4095, 65536))
-        self.assertTrue(self._callFUT(2, 4095, 65536))
-        self.assertTrue(self._callFUT(127, 4095, 65536))
-        self.assertTrue(self._callFUT(128, 4095, 65536))
-        self.assertFalse(self._callFUT(129, 4095, 65536))
+        assert self._callFUT(1, 2048, 65536)
+        assert self._callFUT(2, 2048, 65536)
+        assert self._callFUT(127, 2048, 65536)
+        assert self._callFUT(128, 2048, 65536)
+        assert not self._callFUT(129, 2048, 65536)
+        assert self._callFUT(1, 4095, 65536)
+        assert self._callFUT(2, 4095, 65536)
+        assert self._callFUT(127, 4095, 65536)
+        assert self._callFUT(128, 4095, 65536)
+        assert not self._callFUT(129, 4095, 65536)
 
     def test_w_limit_docratio_ge_4096_lt_8092_over_div(self):
-        self.assertTrue(self._callFUT(1, 4096, 65536))
-        self.assertTrue(self._callFUT(2, 4096, 65536))
-        self.assertTrue(self._callFUT(511, 4096, 65536))
-        self.assertTrue(self._callFUT(512, 4096, 65536))
-        self.assertFalse(self._callFUT(513, 4096, 65536))
-        self.assertTrue(self._callFUT(1, 8091, 65536))
-        self.assertTrue(self._callFUT(2, 8091, 65536))
-        self.assertTrue(self._callFUT(511, 8091, 65536))
-        self.assertTrue(self._callFUT(512, 8091, 65536))
-        self.assertFalse(self._callFUT(513, 8091, 65536))
+        assert self._callFUT(1, 4096, 65536)
+        assert self._callFUT(2, 4096, 65536)
+        assert self._callFUT(511, 4096, 65536)
+        assert self._callFUT(512, 4096, 65536)
+        assert not self._callFUT(513, 4096, 65536)
+        assert self._callFUT(1, 8091, 65536)
+        assert self._callFUT(2, 8091, 65536)
+        assert self._callFUT(511, 8091, 65536)
+        assert self._callFUT(512, 8091, 65536)
+        assert not self._callFUT(513, 8091, 65536)
 
     def test_w_limit_docratio_ge_8192_lt_16384_over_div(self):
-        self.assertTrue(self._callFUT(1, 8192, 65536))
-        self.assertTrue(self._callFUT(2, 8192, 65536))
-        self.assertTrue(self._callFUT(4095, 8192, 65536))
-        self.assertTrue(self._callFUT(4096, 8192, 65536))
-        self.assertFalse(self._callFUT(4097, 8192, 65536))
-        self.assertTrue(self._callFUT(1, 16383, 65536))
-        self.assertTrue(self._callFUT(2, 16383, 65536))
-        self.assertTrue(self._callFUT(4095, 16383, 65536))
-        self.assertTrue(self._callFUT(4096, 16383, 65536))
-        self.assertFalse(self._callFUT(4097, 16383, 65536))
+        assert self._callFUT(1, 8192, 65536)
+        assert self._callFUT(2, 8192, 65536)
+        assert self._callFUT(4095, 8192, 65536)
+        assert self._callFUT(4096, 8192, 65536)
+        assert not self._callFUT(4097, 8192, 65536)
+        assert self._callFUT(1, 16383, 65536)
+        assert self._callFUT(2, 16383, 65536)
+        assert self._callFUT(4095, 16383, 65536)
+        assert self._callFUT(4096, 16383, 65536)
+        assert not self._callFUT(4097, 16383, 65536)
 
 
-class Test_nbest_ascending_wins(unittest.TestCase):
-
+class Test_nbest_ascending_wins:
     def _callFUT(self, limit, rlen, numdocs):
         from . import nbest_ascending_wins
+
         return nbest_ascending_wins(limit, rlen, numdocs)
 
     def test_wo_limit(self):
-        self.assertFalse(self._callFUT(None, 1, 1000))
-        self.assertFalse(self._callFUT(None, 10, 1000))
-        self.assertFalse(self._callFUT(None, 100, 1000))
-        self.assertFalse(self._callFUT(None, 999, 1000))
-        self.assertFalse(self._callFUT(0, 1, 1000))
-        self.assertFalse(self._callFUT(0, 10, 1000))
-        self.assertFalse(self._callFUT(0, 100, 1000))
-        self.assertFalse(self._callFUT(0, 999, 1000))
+        assert not self._callFUT(None, 1, 1000)
+        assert not self._callFUT(None, 10, 1000)
+        assert not self._callFUT(None, 100, 1000)
+        assert not self._callFUT(None, 999, 1000)
+        assert not self._callFUT(0, 1, 1000)
+        assert not self._callFUT(0, 10, 1000)
+        assert not self._callFUT(0, 100, 1000)
+        assert not self._callFUT(0, 999, 1000)
 
     def test_w_limit_numdocs_le_768(self):
-        self.assertTrue(self._callFUT(1, 100, 100))
-        self.assertTrue(self._callFUT(10, 100, 100))
-        self.assertTrue(self._callFUT(99, 100, 100))
-        self.assertTrue(self._callFUT(1, 100, 767))
-        self.assertTrue(self._callFUT(10, 100, 767))
-        self.assertTrue(self._callFUT(99, 100, 767))
-        self.assertTrue(self._callFUT(1, 100, 768))
-        self.assertTrue(self._callFUT(10, 100, 768))
-        self.assertTrue(self._callFUT(99, 100, 768))
+        assert self._callFUT(1, 100, 100)
+        assert self._callFUT(10, 100, 100)
+        assert self._callFUT(99, 100, 100)
+        assert self._callFUT(1, 100, 767)
+        assert self._callFUT(10, 100, 767)
+        assert self._callFUT(99, 100, 767)
+        assert self._callFUT(1, 100, 768)
+        assert self._callFUT(10, 100, 768)
+        assert self._callFUT(99, 100, 768)
 
     def test_w_limit_docratio_lt_4096_over_div(self):
-        self.assertTrue(self._callFUT(1, 10, 65536))
-        self.assertTrue(self._callFUT(2, 10, 65536))
-        self.assertTrue(self._callFUT(127, 200, 65536))
-        self.assertTrue(self._callFUT(128, 200, 65536))
-        self.assertTrue(self._callFUT(3000, 4094, 65536))
-        self.assertTrue(self._callFUT(3000, 4095, 65536))
+        assert self._callFUT(1, 10, 65536)
+        assert self._callFUT(2, 10, 65536)
+        assert self._callFUT(127, 200, 65536)
+        assert self._callFUT(128, 200, 65536)
+        assert self._callFUT(3000, 4094, 65536)
+        assert self._callFUT(3000, 4095, 65536)
 
     def test_w_limit_docratio_eq_1(self):
-        self.assertTrue(self._callFUT(1, 65536, 65536))
-        self.assertTrue(self._callFUT(2, 65536, 65536))
-        self.assertTrue(self._callFUT(8191, 65536, 65536))
-        self.assertTrue(self._callFUT(8192, 65536, 65536))
-        self.assertFalse(self._callFUT(8193, 65536, 65536))
+        assert self._callFUT(1, 65536, 65536)
+        assert self._callFUT(2, 65536, 65536)
+        assert self._callFUT(8191, 65536, 65536)
+        assert self._callFUT(8192, 65536, 65536)
+        assert not self._callFUT(8193, 65536, 65536)
 
     def test_w_limit_docratio_ge_32768_over_div(self):
-        self.assertTrue(self._callFUT(1, 37268, 65536))
-        self.assertTrue(self._callFUT(2, 37268, 65536))
-        self.assertTrue(self._callFUT(4095, 37268, 65536))
-        self.assertTrue(self._callFUT(4096, 37268, 65536))
-        self.assertFalse(self._callFUT(4097, 37268, 65536))
-        self.assertTrue(self._callFUT(1, 65535, 65536))
-        self.assertTrue(self._callFUT(2, 65535, 65536))
-        self.assertTrue(self._callFUT(4095, 65535, 65536))
-        self.assertTrue(self._callFUT(4096, 65535, 65536))
-        self.assertFalse(self._callFUT(4097, 65535, 65536))
+        assert self._callFUT(1, 37268, 65536)
+        assert self._callFUT(2, 37268, 65536)
+        assert self._callFUT(4095, 37268, 65536)
+        assert self._callFUT(4096, 37268, 65536)
+        assert not self._callFUT(4097, 37268, 65536)
+        assert self._callFUT(1, 65535, 65536)
+        assert self._callFUT(2, 65535, 65536)
+        assert self._callFUT(4095, 65535, 65536)
+        assert self._callFUT(4096, 65535, 65536)
+        assert not self._callFUT(4097, 65535, 65536)
 
     def test_w_limit_docratio_ge_4096_lt_32768_over_div(self):
-        self.assertTrue(self._callFUT(1, 4096, 65536))
-        self.assertTrue(self._callFUT(2, 4096, 65536))
-        self.assertTrue(self._callFUT(2047, 4096, 65536))
-        self.assertTrue(self._callFUT(2048, 4096, 65536))
-        self.assertFalse(self._callFUT(2049, 4096, 65536))
-        self.assertTrue(self._callFUT(1, 32767, 65536))
-        self.assertTrue(self._callFUT(2, 32767, 65536))
-        self.assertTrue(self._callFUT(2047, 32767, 65536))
-        self.assertTrue(self._callFUT(2048, 32767, 65536))
-        self.assertFalse(self._callFUT(2049, 32767, 65536))
+        assert self._callFUT(1, 4096, 65536)
+        assert self._callFUT(2, 4096, 65536)
+        assert self._callFUT(2047, 4096, 65536)
+        assert self._callFUT(2048, 4096, 65536)
+        assert not self._callFUT(2049, 4096, 65536)
+        assert self._callFUT(1, 32767, 65536)
+        assert self._callFUT(2, 32767, 65536)
+        assert self._callFUT(2047, 32767, 65536)
+        assert self._callFUT(2048, 32767, 65536)
+        assert not self._callFUT(2049, 32767, 65536)
 
-class Test_MissingValue(unittest.TestCase):
+
+class Test_MissingValue:
     def _makeOne(self, val):
         from hypatia.field import _MissingValue
+
         return _MissingValue(val)
 
     def test___eq__other_class_is_self_class(self):
         inst1 = self._makeOne(True)
         inst2 = self._makeOne(True)
-        self.assertNotEqual(inst1, inst2)
+        assert inst1 != inst2
 
     def test___eq__other_is_self(self):
         inst = self._makeOne(True)
-        self.assertEqual(inst, inst)
-        
+        assert inst == inst
+
     def test___gt__other_class_is_self_class(self):
         inst1 = self._makeOne(True)
         inst2 = self._makeOne(True)
-        self.assertFalse(inst1 > inst2)
-        self.assertTrue(inst1 < inst2)
-        
+        assert not (inst1 > inst2)
+        assert inst1 < inst2
+
     def test___gt__val_True(self):
         inst = self._makeOne(True)
-        self.assertTrue(inst > 1)
+        assert inst > 1
 
     def test___gt__val_False(self):
         inst = self._makeOne(False)
-        self.assertFalse(inst > 1)
-        
-def test_suite():
-    return unittest.TestSuite((
-        doctest.DocFileSuite('README.txt', optionflags=doctest.ELLIPSIS),
-        unittest.makeSuite(FieldIndexTests),
-        unittest.makeSuite(Test_fwscan_wins),
-        unittest.makeSuite(Test_nbest_ascending_wins),
-        unittest.makeSuite(Test_MissingValue),
-        ))
+        assert not (inst > 1)

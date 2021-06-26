@@ -18,6 +18,7 @@ from zope.interface import Interface
 
 from .._compat import u
 
+
 class ILexicon(Interface):
     """Object responsible for converting text to word identifiers."""
 
@@ -78,9 +79,12 @@ class ILexicon(Interface):
         The word should be one of the words returned by parseTerms().
         """
 
+
 class ILexiconBasedIndex(Interface):
-    """ Interface for indexes which hold a lexicon."""
-    lexicon = Attribute(u('Lexicon used by the index.'))
+    """Interface for indexes which hold a lexicon."""
+
+    lexicon = Attribute(u("Lexicon used by the index."))
+
 
 class IQueryParser(Interface):
     """Interface for Query Parsers."""
@@ -118,6 +122,7 @@ class IQueryParser(Interface):
         May raise ParseTree.ParseError.
         """
 
+
 class IQueryParseTree(Interface):
     """Interface for parse trees returned by parseQuery()."""
 
@@ -153,6 +158,7 @@ class IQueryParseTree(Interface):
         May raise ParseTree.QueryError.
         """
 
+
 class ISearchableText(Interface):
     """Interface that text-indexable objects should implement."""
 
@@ -166,21 +172,22 @@ class ISearchableText(Interface):
         returning None indicates the object should not be indexed
         """
 
+
 class IPipelineElement(Interface):
-    """ An element in a lexicon's processing pipeline.
-    """
+    """An element in a lexicon's processing pipeline."""
+
     def process(terms):
-        """ Transform each term in terms.
+        """Transform each term in terms.
 
         Return the sequence of transformed terms.
         """
 
+
 class ISplitter(IPipelineElement):
-    """ Split text into a sequence of words.
-    """
+    """Split text into a sequence of words."""
+
     def processGlob(terms):
-        """ Transform terms, leaving globbing markers in place.
-        """
+        """Transform terms, leaving globbing markers in place."""
 
 
 class IExtendedQuerying(Interface):

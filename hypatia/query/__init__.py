@@ -10,14 +10,15 @@ from .._compat import xrange
 
 _marker = object()
 
+
 class Query(object):
     """
     Base class for all elements that make up queries.
     """
+
     __parent__ = None
     __name__ = None
     family = BTrees.family64
-
 
     def __and__(self, right):
         self._check_type("and", right)
@@ -30,14 +31,15 @@ class Query(object):
     def _check_type(self, setop, operand):
         if not isinstance(operand, Query):
             raise TypeError(
-                "TypeError: unsupported operand types for %s: %s %s" %
-                (setop, type(self), type(operand)))
+                "TypeError: unsupported operand types for %s: %s %s"
+                % (setop, type(self), type(operand))
+            )
 
     def iter_children(self):
         return ()
 
     def print_tree(self, out=sys.stdout, level=0):
-        out.write('%s%s\n' % ('  ' * level, str(self)))
+        out.write("%s%s\n" % ("  " * level, str(self)))
         for child in self.iter_children():
             child.print_tree(out, level + 1)
 
@@ -66,6 +68,7 @@ class Query(object):
         _, result = self.family.IF.weightedUnion(left, right)
         return result
 
+
 class Comparator(Query):
     """
     Base class for all comparators used in queries.
@@ -90,11 +93,14 @@ class Comparator(Query):
         return value
 
     def __str__(self):
-        return ' '.join((self.index.qname(), self.operator, repr(self._value)))
+        return " ".join((self.index.qname(), self.operator, repr(self._value)))
 
     def __eq__(self, other):
-        return (type(self) == type(other) and
-                self.index == other.index and self._value == other._value)
+        return (
+            type(self) == type(other)
+            and self.index == other.index
+            and self._value == other._value
+        )
 
     def flush(self, *arg, **kw):
         self.index.flush(*arg, **kw)
@@ -105,11 +111,8 @@ class Comparator(Query):
         else:
             query = self
 
-        return self.index.resultset_from_query(
-            query,
-            names=names,
-            resolver=resolver
-            )
+        return self.index.resultset_from_query(query, names=names, resolver=resolver)
+
 
 class Contains(Comparator):
     """Contains query.
@@ -121,21 +124,20 @@ class Contains(Comparator):
         return self.index.applyContains(self._get_value(names))
 
     def __str__(self):
-        return '%r in %s' % (self._value, self.index)
+        return "%r in %s" % (self._value, self.index)
 
     def negate(self):
         return NotContains(self.index, self._value)
 
 
 class NotContains(Comparator):
-    """CQE equivalent: 'foo' not in index
-    """
+    """CQE equivalent: 'foo' not in index"""
 
     def _apply(self, names):
         return self.index.applyNotContains(self._get_value(names))
 
     def __str__(self):
-        return '%r not in %s' % (self._value, self.index)
+        return "%r not in %s" % (self._value, self.index)
 
     def negate(self):
         return Contains(self.index, self._value)
@@ -146,7 +148,8 @@ class Eq(Comparator):
 
     CQE equivalent:  index == 'foo'
     """
-    operator = '=='
+
+    operator = "=="
 
     def _apply(self, names):
         return self.index.applyEq(self._get_value(names))
@@ -160,7 +163,8 @@ class NotEq(Comparator):
 
     CQE equivalent: index != 'foo'
     """
-    operator = '!='
+
+    operator = "!="
 
     def _apply(self, names):
         return self.index.applyNotEq(self._get_value(names))
@@ -170,11 +174,12 @@ class NotEq(Comparator):
 
 
 class Gt(Comparator):
-    """ Greater than query.
+    """Greater than query.
 
     CQE equivalent: index > 'foo'
     """
-    operator = '>'
+
+    operator = ">"
 
     def _apply(self, names):
         return self.index.applyGt(self._get_value(names))
@@ -184,11 +189,12 @@ class Gt(Comparator):
 
 
 class Lt(Comparator):
-    """ Less than query.
+    """Less than query.
 
     CQE equivalent: index < 'foo'
     """
-    operator = '<'
+
+    operator = "<"
 
     def _apply(self, names):
         return self.index.applyLt(self._get_value(names))
@@ -202,7 +208,8 @@ class Ge(Comparator):
 
     CQE equivalent: index >= 'foo'
     """
-    operator = '>='
+
+    operator = ">="
 
     def _apply(self, names):
         return self.index.applyGe(self._get_value(names))
@@ -216,7 +223,8 @@ class Le(Comparator):
 
     CQE equivalent: index <= 'foo
     """
-    operator = '<='
+
+    operator = "<="
 
     def _apply(self, names):
         return self.index.applyLe(self._get_value(names))
@@ -238,7 +246,7 @@ class Any(Comparator):
         return NotAny(self.index, self._value)
 
     def __str__(self):
-        return '%s in any(%r)' % (self.index, self._value)
+        return "%s in any(%r)" % (self.index, self._value)
 
 
 class NotAny(Comparator):
@@ -246,7 +254,8 @@ class NotAny(Comparator):
 
     CQE equivalent: index not in any(['foo', 'bar'])
     """
-    operator = 'not any'
+
+    operator = "not any"
 
     def _apply(self, names):
         return self.index.applyNotAny(self._get_value(names))
@@ -255,7 +264,7 @@ class NotAny(Comparator):
         return Any(self.index, self._value)
 
     def __str__(self):
-        return '%s not in any(%r)' % (self.index, self._value)
+        return "%s not in any(%r)" % (self.index, self._value)
 
 
 class All(Comparator):
@@ -263,7 +272,8 @@ class All(Comparator):
 
     CQE equivalent: index in all(['foo', 'bar'])
     """
-    operator = 'all'
+
+    operator = "all"
 
     def _apply(self, names):
         return self.index.applyAll(self._get_value(names))
@@ -272,7 +282,7 @@ class All(Comparator):
         return NotAll(self.index, self._value)
 
     def __str__(self):
-        return '%s in all(%r)' % (self.index, self._value)
+        return "%s in all(%r)" % (self.index, self._value)
 
 
 class NotAll(Comparator):
@@ -280,7 +290,8 @@ class NotAll(Comparator):
 
     CQE equivalent: index not in all(['foo', 'bar'])
     """
-    operator = 'not all'
+
+    operator = "not all"
 
     def _apply(self, names):
         return self.index.applyAll(self._get_value(names))
@@ -289,11 +300,10 @@ class NotAll(Comparator):
         return All(self.index, self._value)
 
     def __str__(self):
-        return '%s not in all(%r)' % (self.index, self._value)
+        return "%s not in all(%r)" % (self.index, self._value)
 
 
 class _Range(Comparator, RichComparisonMixin):
-
     @classmethod
     def fromGTLT(cls, start, end):
         assert isinstance(start, (Gt, Ge))
@@ -309,11 +319,11 @@ class _Range(Comparator, RichComparisonMixin):
             end_exclusive = False
 
         assert start.index == end.index
-        return cls(start.index, start._value, end._value,
-                   start_exclusive, end_exclusive)
+        return cls(
+            start.index, start._value, end._value, start_exclusive, end_exclusive
+        )
 
-    def __init__(self, index, start, end,
-                 start_exclusive=False, end_exclusive=False):
+    def __init__(self, index, start, end, start_exclusive=False, end_exclusive=False):
         self.index = index
         self._start = start
         self._end = end
@@ -341,28 +351,31 @@ class _Range(Comparator, RichComparisonMixin):
     def __str__(self):
         s = [repr(self._start)]
         if self.start_exclusive:
-            s.append('<')
+            s.append("<")
         else:
-            s.append('<=')
+            s.append("<=")
         s.append(self.index.qname())
         if self.end_exclusive:
-            s.append('<')
+            s.append("<")
         else:
-            s.append('<=')
+            s.append("<=")
         s.append(repr(self._end))
-        return ' '.join(s)
+        return " ".join(s)
 
     def __eq__(self, other):
         if not isinstance(other, type(self)):
             return False
-        return (self.index == other.index and
-                self._start == other._start and
-                self._end == other._end and
-                self.start_exclusive == other.start_exclusive and
-                self.end_exclusive == other.end_exclusive)
+        return (
+            self.index == other.index
+            and self._start == other._start
+            and self._end == other._end
+            and self.start_exclusive == other.start_exclusive
+            and self.end_exclusive == other.end_exclusive
+        )
+
 
 class InRange(_Range):
-    """ Index value falls within a range.
+    """Index value falls within a range.
 
     CQE equivalent: lower < index < upper
                    lower <= index <= upper
@@ -370,16 +383,20 @@ class InRange(_Range):
 
     def _apply(self, names):
         return self.index.applyInRange(
-            self._get_start(names), self._get_end(names),
-            self.start_exclusive, self.end_exclusive)
+            self._get_start(names),
+            self._get_end(names),
+            self.start_exclusive,
+            self.end_exclusive,
+        )
 
     def negate(self):
-        return NotInRange(self.index, self._start, self._end,
-                          self.start_exclusive, self.end_exclusive)
+        return NotInRange(
+            self.index, self._start, self._end, self.start_exclusive, self.end_exclusive
+        )
 
 
 class NotInRange(_Range):
-    """ Index value falls outside a range.
+    """Index value falls outside a range.
 
     CQE equivalent: not(lower < index < upper)
                    not(lower <= index <= upper)
@@ -387,21 +404,26 @@ class NotInRange(_Range):
 
     def _apply(self, names):
         return self.index.applyNotInRange(
-            self._get_start(names), self._get_end(names),
-            self.start_exclusive, self.end_exclusive)
+            self._get_start(names),
+            self._get_end(names),
+            self.start_exclusive,
+            self.end_exclusive,
+        )
 
     def __str__(self):
-        return 'not(%s)' % _Range.__str__(self)
+        return "not(%s)" % _Range.__str__(self)
 
     def negate(self):
-        return InRange(self.index, self._start, self._end,
-                       self.start_exclusive, self.end_exclusive)
+        return InRange(
+            self.index, self._start, self._end, self.start_exclusive, self.end_exclusive
+        )
 
 
 class BoolOp(Query):
     """
     Base class for Or and And operators.
     """
+
     def __init__(self, *queries):
         arguments = []
         for query in queries:
@@ -425,7 +447,7 @@ class BoolOp(Query):
 
     def execute(self, optimize=True, names=None, resolver=None):
         if not self.queries:
-            raise ValueError('No subqueries')
+            raise ValueError("No subqueries")
 
         queries = [self]
         index = None
@@ -433,24 +455,20 @@ class BoolOp(Query):
         while queries:
             # drill down until we find some query with an index attached
             subq = queries.pop(0)
-            index = getattr(subq, 'index', None)
+            index = getattr(subq, "index", None)
             if index is not None:
                 break
             queries.extend(list(subq.iter_children()))
 
         if index is None:
-            raise ValueError('No query has a reference to an index')
+            raise ValueError("No query has a reference to an index")
 
         if optimize:
             query = self._optimize()
         else:
             query = self
 
-        return index.resultset_from_query(
-            query,
-            names=names,
-            resolver=resolver
-            )
+        return index.resultset_from_query(query, names=names, resolver=resolver)
 
     def iter_children(self):
         for query in self.queries:
@@ -528,7 +546,8 @@ class Or(BoolOp):
 
         def process_range(i_lower, query_lower, i_upper, query_upper):
             queries[i_lower] = NotInRange.fromGTLT(
-                query_lower.negate(), query_upper.negate())
+                query_lower.negate(), query_upper.negate()
+            )
             queries[i_upper] = None
 
         for i in xrange(len(queries)):
@@ -624,7 +643,7 @@ class Not(Query):
         self.query = query
 
     def __str__(self):
-        return 'Not'
+        return "Not"
 
     def iter_children(self):
         yield self.query
@@ -648,10 +667,9 @@ class Not(Query):
             query = self
 
         return self.query.index.resultset_from_query(
-            query,
-            names=names,
-            resolver=resolver
-            )
+            query, names=names, resolver=resolver
+        )
+
 
 class Name(object):
     """
@@ -682,7 +700,7 @@ class Name(object):
         self.name = name
 
     def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self.name)
+        return "%s(%r)" % (self.__class__.__name__, self.name)
 
     __str__ = __repr__
 
@@ -757,15 +775,15 @@ class _AstParser(object):
         return result
 
     def walk(self, tree):
-
         def visit(node):
             children = [visit(child) for child in ast.iter_child_nodes(node)]
-            name = 'process_%s' % type(node).__name__
+            name = "process_%s" % type(node).__name__
             processor = getattr(self, name, None)
             if processor is None:
                 raise ValueError(
                     "Unable to parse expression.  Unhandled expression "
-                    "element: %s" % type(node).__name__)
+                    "element: %s" % type(node).__name__
+                )
             return processor(node, children)
 
         return visit(tree)
@@ -779,7 +797,7 @@ class _AstParser(object):
     def process_Attribute(self, node, children):
         name = children[0]
         dotted_name = ast.Name()
-        dotted_name.id = '.'.join((name.id, node.attr))
+        dotted_name.id = ".".join((name.id, node.attr))
         return dotted_name
 
     def process_Str(self, node, children):
@@ -816,14 +834,13 @@ class _AstParser(object):
     def process_GtE(self, node, children):
         return self.process_comparator(Ge)
 
-    def process_UAdd(self, node, children): #pragma NO COVER Py3k only
+    def process_UAdd(self, node, children):  # pragma NO COVER Py3k only
         return operator.pos
 
-    def process_USub(self, node, children): #pragma NO COVER Py3k only
+    def process_USub(self, node, children):  # pragma NO COVER Py3k only
         return operator.neg
 
     def process_comparator(self, cls):
-
         def factory(left, right):
             return cls(self._get_index(left), self._value(right))
 
@@ -831,7 +848,6 @@ class _AstParser(object):
         return factory
 
     def process_In(self, node, children):
-
         def factory(left, right):
             if callable(right):  # any or all, see process_Call
                 return right(self._get_index(left))
@@ -841,7 +857,6 @@ class _AstParser(object):
         return factory
 
     def process_NotIn(self, node, children):
-
         def factory(left, right):
             if callable(right):  # any or all, see process_Call
                 return right(self._get_index(left)).negate()
@@ -887,13 +902,14 @@ class _AstParser(object):
                     end_exclusive = True
                 else:
                     end_exclusive = False
-                return InRange(self._get_index(index_name),
-                               self._value(start),
-                               self._value(end),
-                               start_exclusive,
-                               end_exclusive)
-        raise ValueError(
-            "Bad expression: unsupported chaining of comparators.")
+                return InRange(
+                    self._get_index(index_name),
+                    self._value(start),
+                    self._value(end),
+                    start_exclusive,
+                    end_exclusive,
+                )
+        raise ValueError("Bad expression: unsupported chaining of comparators.")
 
     def process_BitOr(self, node, children):
         return Or
@@ -905,12 +921,14 @@ class _AstParser(object):
         left, operator, right = children
         if not isinstance(left, Query):
             raise ValueError(
-                "Bad expression: left operand for %s must be a query." %
-                operator.__name__)
+                "Bad expression: left operand for %s must be a query."
+                % operator.__name__
+            )
         if not isinstance(right, Query):
             raise ValueError(
-                "Bad expression: right operand for %s must be a query." %
-                operator.__name__)
+                "Bad expression: right operand for %s must be a query."
+                % operator.__name__
+            )
         return operator(left, right)
 
     def process_Or(self, node, children):
@@ -925,23 +943,23 @@ class _AstParser(object):
             if not isinstance(child, Query):
                 raise ValueError(
                     "Bad expression: All operands for %s must be queries."
-                    % operator.__name__)
+                    % operator.__name__
+                )
 
         return operator(*children)
 
     def process_Call(self, node, children):
         func = children.pop(0)
-        name = getattr(func, 'id', str(node.func))
-        if name not in ('any', 'all'):
+        name = getattr(func, "id", str(node.func))
+        if name not in ("any", "all"):
             raise ValueError(
-                "Bad expression: Illegal function call in expression: %s" %
-                name)
+                "Bad expression: Illegal function call in expression: %s" % name
+            )
         if len(children) != 1:
-            raise ValueError(
-                "Bad expression: Wrong number of arguments to %s" % name)
+            raise ValueError("Bad expression: Wrong number of arguments to %s" % name)
 
         values = children[0]
-        if name == 'any':
+        if name == "any":
             comparator = Any
         else:
             comparator = All
@@ -990,7 +1008,8 @@ def _print_ast(expr):  # pragma NO COVERAGE
     tree = ast.parse(expr)
 
     def visit(node, level):
-        sys.stdout.write('%s%s\n' % ('  ' * level + str(node)))
+        sys.stdout.write("%s%s\n" % ("  " * level + str(node)))
         for child in ast.iter_child_nodes(node):
             visit(child, level + 1)
+
     visit(tree, 0)

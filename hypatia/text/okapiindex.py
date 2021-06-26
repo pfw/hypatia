@@ -199,17 +199,18 @@ from .baseindex import inverse_doc_frequency
 
 score = None
 
-if not os.environ.get('PURE_PYTHON'):
+if not os.environ.get("PURE_PYTHON"):
     try:
         from .okascore import score
-    except ImportError: #pragma NO COVERAGE
+    except ImportError:  # pragma NO COVERAGE
         pass
+
 
 class OkapiIndex(BaseIndex):
 
     # BM25 free parameters.
     K1 = 1.2
-    B  = 0.75
+    B = 0.75
     assert K1 >= 0.0
     assert 0.0 <= B <= 1.0
 
@@ -261,7 +262,8 @@ class OkapiIndex(BaseIndex):
     # D to TF(D,t)*IDF(t) directly, where the product is computed as a float.
     # NOTE:  This may be overridden below, by a function that computes the
     # same thing but with the inner scoring loop in C.
-    if score is None: #pragma NO COVERAGE
+    if score is None:  # pragma NO COVERAGE
+
         def _search_wids(self, wids):
             if not wids:
                 return []
@@ -284,7 +286,7 @@ class OkapiIndex(BaseIndex):
             L = []
             docid2len = self._docweight
             for t in wids:
-                d2f = self._wordinfo[t] # map {docid -> f(docid, t)}
+                d2f = self._wordinfo[t]  # map {docid -> f(docid, t)}
                 idf = inverse_doc_frequency(len(d2f), N)  # an unscaled float
                 result = self.family.IF.Bucket()
                 for docid, f in d2f.items():
@@ -308,6 +310,7 @@ class OkapiIndex(BaseIndex):
             # near the edge, it's not a speed cure, since the
             # computation of tf would still be done at Python speed,
             # and it's a lot more work than just multiplying by idf.
+
     else:
         # The same function as _search_wids above, but with the inner scoring
         # loop written in C (module okascore, function score()).
@@ -323,10 +326,10 @@ class OkapiIndex(BaseIndex):
                 # _totaldoclen has not yet been upgraded
                 doclen = self._totaldoclen
             meandoclen = doclen / N
-            #K1 = self.K1
-            #B = self.B
-            #K1_plus1 = K1 + 1.0
-            #B_from1 = 1.0 - B
+            # K1 = self.K1
+            # B = self.B
+            # K1_plus1 = K1 + 1.0
+            # B_from1 = 1.0 - B
 
             #                           f(D, t) * (k1 + 1)
             #   TF(D, t) =  -------------------------------------------
@@ -335,7 +338,7 @@ class OkapiIndex(BaseIndex):
             L = []
             docid2len = self._docweight
             for t in wids:
-                d2f = self._wordinfo[t] # map {docid -> f(docid, t)}
+                d2f = self._wordinfo[t]  # map {docid -> f(docid, t)}
                 idf = inverse_doc_frequency(len(d2f), N)  # an unscaled float
                 result = self.family.IF.Bucket()
                 score(result, _items(d2f), docid2len, idf, meandoclen)
@@ -366,4 +369,3 @@ class OkapiIndex(BaseIndex):
         for wid in wids:
             d[wid] = dget(wid, 0) + 1
         return d, len(wids)
-

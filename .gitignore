@@ -16,3 +16,5 @@ include/
 lib/
 build/
 *.so
+/.idea
+/.vscode

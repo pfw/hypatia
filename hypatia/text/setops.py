@@ -18,6 +18,7 @@ import BTrees
 
 from hypatia.nbest import NBest
 
+
 def mass_weightedIntersection(L, family=BTrees.family64):
     "A list of (mapping, weight) pairs -> their weightedIntersection IFBucket."
     L = [(x, wx) for (x, wx) in L if x is not None]
@@ -32,6 +33,7 @@ def mass_weightedIntersection(L, family=BTrees.family64):
     for x, wx in L[2:]:
         dummy, result = family.IF.weightedIntersection(result, x, 1, wx)
     return result
+
 
 def mass_weightedUnion(L, family=BTrees.family64):
     "A list of (mapping, weight) pairs -> their weightedUnion IFBucket."
@@ -50,6 +52,7 @@ def mass_weightedUnion(L, family=BTrees.family64):
     (result, weight), dummy = merge.pop_smallest()
     return result
 
+
 def _trivial(L, family):
     # L is empty or has only one (mapping, weight) pair.  If there is a
     # pair, we may still need to multiply the mapping by its weight.
@@ -58,6 +61,5 @@ def _trivial(L, family):
         return family.IF.Bucket()
     [(result, weight)] = L
     if weight != 1:
-        dummy, result = family.IF.weightedUnion(
-            family.IF.Bucket(), result, 0, weight)
+        dummy, result = family.IF.weightedUnion(family.IF.Bucket(), result, 0, weight)
     return result

@@ -62,25 +62,26 @@ from . import parsetree
 from .._compat import intern
 
 # Create unique symbols for token types.
-_AND    = intern("AND")
-_OR     = intern("OR")
-_NOT    = intern("NOT")
+_AND = intern("AND")
+_OR = intern("OR")
+_NOT = intern("NOT")
 _LPAREN = intern("(")
 _RPAREN = intern(")")
-_ATOM   = intern("ATOM")
-_EOF    = intern("EOF")
+_ATOM = intern("ATOM")
+_EOF = intern("EOF")
 
 # Map keyword string to token type.
 _keywords = {
-    _AND:       _AND,
-    _OR:        _OR,
-    _NOT:       _NOT,
-    _LPAREN:    _LPAREN,
-    _RPAREN:    _RPAREN,
+    _AND: _AND,
+    _OR: _OR,
+    _NOT: _NOT,
+    _LPAREN: _LPAREN,
+    _RPAREN: _RPAREN,
 }
 
 # Regular expression to tokenize.
-_tokenizer_regex = re.compile(r"""
+_tokenizer_regex = re.compile(
+    r"""
     # a paren
     [()]
     # or an optional hyphen
@@ -92,7 +93,10 @@ _tokenizer_regex = re.compile(r"""
         # or a non-empty stretch w/o whitespace, parens or double quotes
     |    [^()\s"]+
     )
-""", re.VERBOSE)
+""",
+    re.VERBOSE,
+)
+
 
 @implementer(IQueryParser)
 class QueryParser(object):
@@ -111,20 +115,20 @@ class QueryParser(object):
         tokens = _tokenizer_regex.findall(query)
         self._tokens = tokens
         # classify tokens
-        self._tokentypes = [_keywords.get(token.upper(), _ATOM)
-                            for token in tokens]
+        self._tokentypes = [_keywords.get(token.upper(), _ATOM) for token in tokens]
         # add _EOF
         self._tokens.append(_EOF)
         self._tokentypes.append(_EOF)
         self._index = 0
 
         # Syntactical analysis.
-        self._ignored = [] # Ignored words in the query, for parseQueryEx
+        self._ignored = []  # Ignored words in the query, for parseQueryEx
         tree = self._parseOrExpr()
         self._require(_EOF)
         if tree is None:
             raise parsetree.ParseError(
-                "Query contains only common words: %s" % repr(query))
+                "Query contains only common words: %s" % repr(query)
+            )
         return tree
 
     def getIgnored(self):
@@ -165,7 +169,7 @@ class QueryParser(object):
             L.append(self._parseAndExpr())
         L = [x for x in L if x]
         if not L:
-            return None # Only stopwords
+            return None  # Only stopwords
         elif len(L) == 1:
             return L[0]
         else:
@@ -189,12 +193,12 @@ class QueryParser(object):
             elif self._check(_NOT):
                 t = self._parseTerm()
                 if t is None:
-                    continue # Only stopwords
+                    continue  # Only stopwords
                 Nots.append(parsetree.NotNode(t))
             else:
                 break
         if not L:
-            return None # Only stopwords
+            return None  # Only stopwords
         L.extend(Nots)
         if len(L) == 1:
             return L[0]
@@ -205,7 +209,7 @@ class QueryParser(object):
         if self._check(_NOT):
             t = self._parseTerm()
             if t is None:
-                return None # Only stopwords
+                return None  # Only stopwords
             return parsetree.NotNode(t)
         else:
             return self._parseTerm()
@@ -219,16 +223,20 @@ class QueryParser(object):
             nodes = [self._parseAtom()]
             while self._peek(_ATOM):
                 nodes.append(self._parseAtom())
-            nodes = [x for x in  nodes if x]
+            nodes = [x for x in nodes if x]
             if not nodes:
-                return None # Only stopwords
+                return None  # Only stopwords
             structure = sorted(
-                [(isinstance(nodes[i], parsetree.NotNode), i, nodes[i])
-                         for i in range(len(nodes))])
+                [
+                    (isinstance(nodes[i], parsetree.NotNode), i, nodes[i])
+                    for i in range(len(nodes))
+                ]
+            )
             nodes = [node for (bit, index, node) in structure]
             if isinstance(nodes[0], parsetree.NotNode):
                 raise parsetree.ParseError(
-                    "a term must have at least one positive word")
+                    "a term must have at least one positive word"
+                )
             if len(nodes) == 1:
                 return nodes[0]
             tree = parsetree.AndNode(nodes)

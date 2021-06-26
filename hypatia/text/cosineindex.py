@@ -18,8 +18,8 @@ import math
 from .baseindex import BaseIndex
 from .baseindex import inverse_doc_frequency
 
-class CosineIndex(BaseIndex):
 
+class CosineIndex(BaseIndex):
     def __init__(self, lexicon, family=None):
         BaseIndex.__init__(self, lexicon, family=family)
 
@@ -67,9 +67,9 @@ class CosineIndex(BaseIndex):
         DictType = type({})
         for wid in wids:
             assert wid in self._wordinfo  # caller responsible for OOV
-            d2w = self._wordinfo[wid] # maps docid to w(docid, wid)
+            d2w = self._wordinfo[wid]  # maps docid to w(docid, wid)
             idf = inverse_doc_frequency(len(d2w), N)  # an unscaled float
-            #print "idf = %.3f" % idf
+            # print "idf = %.3f" % idf
             if isinstance(d2w, DictType):
                 d2w = self.family.IF.Bucket(d2w)
             L.append((d2w, idf))
@@ -97,11 +97,11 @@ class CosineIndex(BaseIndex):
             Wsquares += w * w
             d[wid] = w
         W = math.sqrt(Wsquares)
-        #print "W = %.3f" % W
+        # print "W = %.3f" % W
         for wid, weight in d.items():
-            #print i, ":", "%.3f" % weight,
+            # print i, ":", "%.3f" % weight,
             d[wid] = weight / W
-            #print "->", d[wid]
+            # print "->", d[wid]
         return d, W
 
 

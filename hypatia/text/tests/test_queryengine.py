@@ -15,12 +15,16 @@
 """
 import unittest
 
-class FauxIndex(object):
 
+class FauxIndex(object):
     def _get_family(self):
         import BTrees
+
         return BTrees.family32
-    family = property(_get_family,)
+
+    family = property(
+        _get_family,
+    )
 
     def search(self, term):
         b = self.family.IF.Bucket()
@@ -32,12 +36,13 @@ class FauxIndex(object):
             b[1] = b[2] = b[3] = b[4] = 1
         return b
 
-class TestQueryEngine(unittest.TestCase):
 
+class TestQueryEngine(unittest.TestCase):
     def _makeIndexAndParser(self):
         from ..lexicon import Lexicon
         from ..lexicon import Splitter
         from ..queryparser import QueryParser
+
         lexicon = Lexicon(Splitter())
         parser = QueryParser(lexicon)
         index = FauxIndex()
@@ -57,7 +62,7 @@ class TestQueryEngine(unittest.TestCase):
 
     def testExecuteQuery(self):
         self._compareQuery("foo AND bar", {1: 2})
-        self._compareQuery("foo OR bar", {1: 2, 2: 1, 3:1})
+        self._compareQuery("foo OR bar", {1: 2, 2: 1, 3: 1})
         self._compareQuery("foo AND NOT bar", {3: 1})
         self._compareQuery("foo AND foo AND foo", {1: 3, 3: 3})
         self._compareQuery("foo OR foo OR foo", {1: 3, 3: 3})
@@ -69,7 +74,7 @@ class TestQueryEngine(unittest.TestCase):
         from ..parsetree import AtomNode
         from ..parsetree import NotNode
         from ..parsetree import QueryError
+
         index, parser = self._makeIndexAndParser()
         tree = NotNode(AtomNode("foo"))
         self.assertRaises(QueryError, tree.executeQuery, index)
-

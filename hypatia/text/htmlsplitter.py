@@ -20,12 +20,12 @@ from zope.interface import implementer
 from .interfaces import ISplitter
 
 MARKUP = re.compile(r"(<[^<>]*>|&[A-Za-z]+;)")
-WORDS = re.compile(r"(?L)\w+")
-GLOBS = re.compile(r"(?L)\w+[\w*?]*")
+WORDS = re.compile(r"\w+")
+GLOBS = re.compile(r"\w+[\w*?]*")
+
 
 @implementer(ISplitter)
 class HTMLWordSplitter(object):
-
     def process(self, text):
         return self._apply(text, WORDS)
 
@@ -40,5 +40,5 @@ class HTMLWordSplitter(object):
         return result
 
     def _split(self, text, pattern):
-        text = MARKUP.sub(' ', text.lower())
+        text = MARKUP.sub(" ", text.lower())
         return pattern.findall(text)

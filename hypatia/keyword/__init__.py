@@ -3,7 +3,7 @@ from zope.interface import implementer
 from ..interfaces import (
     IIndex,
     IIndexStatistics,
-    )
+)
 from ..util import BaseIndexMixin
 
 from persistent import Persistent
@@ -16,11 +16,12 @@ from .._compat import string_types
 
 _marker = object()
 
+
 @implementer(
     IIndex,
     IIndexStatistics,
     IKeywordQuerying,
-    )
+)
 class KeywordIndex(BaseIndexMixin, Persistent):
     """
     Keyword index.
@@ -54,8 +55,7 @@ class KeywordIndex(BaseIndexMixin, Persistent):
             self.family = family
         if not callable(discriminator):
             if not isinstance(discriminator, string_types):
-                raise ValueError('discriminator value must be callable or a '
-                                 'string')
+                raise ValueError("discriminator value must be callable or a " "string")
         self.discriminator = discriminator
         self.reset()
 
@@ -73,10 +73,9 @@ class KeywordIndex(BaseIndexMixin, Persistent):
         self._not_indexed = self.family.IF.TreeSet()
 
     def unique_values(self):
-        """ Return the unique values in the index for all docids as an iterable
-        """
+        """Return the unique values in the index for all docids as an iterable"""
         return self._fwd_index.keys()
-    
+
     def reindex_doc(self, docid, value):
         # the base index' index_doc method special-cases a reindex
         return self.index_doc(docid, value)
@@ -95,7 +94,7 @@ class KeywordIndex(BaseIndexMixin, Persistent):
         return len(self._fwd_index)
 
     def applyAny(self, values):
-        return self.apply({'query': values, 'operator': 'or'})
+        return self.apply({"query": values, "operator": "or"})
 
     def any(self, value):
         return query.Any(self, value)
@@ -107,7 +106,7 @@ class KeywordIndex(BaseIndexMixin, Persistent):
         return query.NotAny(self, value)
 
     def applyAll(self, values):
-        return self.apply({'query': values, 'operator': 'and'})
+        return self.apply({"query": values, "operator": "and"})
 
     def all(self, value):
         return query.All(self, value)
@@ -161,7 +160,7 @@ class KeywordIndex(BaseIndexMixin, Persistent):
             self._not_indexed.remove(docid)
 
         if isinstance(seq, string_types):
-            raise TypeError('seq argument must be a list/tuple of strings')
+            raise TypeError("seq argument must be a list/tuple of strings")
 
         old_kw = self._rev_index.get(docid, None)
         if not seq:
@@ -200,8 +199,8 @@ class KeywordIndex(BaseIndexMixin, Persistent):
         _not_indexed = self._not_indexed
         if docid in _not_indexed:
             _not_indexed.remove(docid)
-        
-        idx  = self._fwd_index
+
+        idx = self._fwd_index
 
         try:
             for word in self._rev_index[docid]:
@@ -209,18 +208,18 @@ class KeywordIndex(BaseIndexMixin, Persistent):
                 if not idx[word]:
                     del idx[word]
         except KeyError:
-            msg = 'WAAA!  Inconsistent'
+            msg = "WAAA!  Inconsistent"
             return
 
         try:
             del self._rev_index[docid]
-        except KeyError: #pragma NO COVERAGE
-            msg = 'WAAA!  Inconsistent'
+        except KeyError:  # pragma NO COVERAGE
+            msg = "WAAA!  Inconsistent"
 
         self._num_docs.change(-1)
 
     def _insert_forward(self, docid, words):
-        """insert a sequence of words into the forward index """
+        """insert a sequence of words into the forward index"""
 
         idx = self._fwd_index
         get_word_idx = idx.get
@@ -232,18 +231,20 @@ class KeywordIndex(BaseIndexMixin, Persistent):
             if word_idx is None:
                 idx[word] = word_idx = Set()
             word_idx.insert(docid)
-            if (not isinstance(word_idx, TreeSet) and
-                    len(word_idx) >= self.tree_threshold):
+            if (
+                not isinstance(word_idx, TreeSet)
+                and len(word_idx) >= self.tree_threshold
+            ):
                 # Convert to a TreeSet.
                 idx[word] = TreeSet(word_idx)
 
     def _insert_reverse(self, docid, words):
-        """ add words to forward index """
+        """add words to forward index"""
 
         if words:
             self._rev_index[docid] = words
 
-    def search(self, query, operator='and'):
+    def search(self, query, operator="and"):
         """Execute a search given by 'query'."""
         if isinstance(query, string_types):
             query = [query]
@@ -255,9 +256,9 @@ class KeywordIndex(BaseIndexMixin, Persistent):
             docids = self._fwd_index.get(word, self.family.IF.Set())
             sets.append(docids)
 
-        if operator == 'or':
+        if operator == "or":
             rs = self.family.IF.multiunion(sets)
-        elif operator == 'and':
+        elif operator == "and":
             # sort smallest to largest set so we intersect the smallest
             # number of document identifiers possible
             sets.sort(key=len)
@@ -267,8 +268,10 @@ class KeywordIndex(BaseIndexMixin, Persistent):
                 if not rs:
                     break
         else:
-            raise TypeError('Keyword index only supports `and` and `or` '
-                            'operators, not `%s`.' % operator)
+            raise TypeError(
+                "Keyword index only supports `and` and `or` "
+                "operators, not `%s`." % operator
+            )
 
         if rs:
             return rs
@@ -276,11 +279,11 @@ class KeywordIndex(BaseIndexMixin, Persistent):
             return self.family.IF.Set()
 
     def apply(self, query):
-        operator = 'and'
+        operator = "and"
         if isinstance(query, dict):
-            if 'operator' in query:
-                operator = query['operator']
-            query = query['query']
+            if "operator" in query:
+                operator = query["operator"]
+            query = query["query"]
         return self.search(query, operator=operator)
 
     def optimize(self):
@@ -303,4 +306,3 @@ class KeywordIndex(BaseIndexMixin, Persistent):
                 if isinstance(word_idx, TreeSet):
                     # Convert to a Set.
                     idx[word] = Set(word_idx)
-

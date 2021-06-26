@@ -36,10 +36,10 @@ Emit the lower m bits of x-1, treating x-1 as a binary value.
 
 import array
 
-class BitArray(object):
 
+class BitArray(object):
     def __init__(self, buf=None):
-        self.bytes = array.array('B')
+        self.bytes = array.array("B")
         self.nbits = 0
         self.bitsleft = 0
         self.tostring = self.bytes.tostring
@@ -77,9 +77,10 @@ class BitArray(object):
 
     def __setstate__(self, nbits_bitsleft_s):
         nbits, bitsleft, s = nbits_bitsleft_s
-        self.bytes = array.array('B', s)
+        self.bytes = array.array("B", s)
         self.nbits = nbits
         self.bitsleft = bitsleft
+
 
 class RiceCode(object):
     def __init__(self, m):
@@ -119,7 +120,7 @@ class RiceCode(object):
     def tolist(self):
         """Return the items as a list."""
         l = []
-        i = 0 # bit offset
+        i = 0  # bit offset
         binary_range = range(self.m)
         for j in range(self.len):
             unary = 0
@@ -150,12 +151,14 @@ class RiceCode(object):
         self.init(m)
         self.bits = bits
 
+
 def encode(m, l):
     c = RiceCode(m)
     for elt in l:
         c.append(elt)
     assert c.tolist() == l
     return c
+
 
 def encode_deltas(l):
     if len(l) == 1:
@@ -166,21 +169,26 @@ def encode_deltas(l):
         deltas.append(l[i] - l[i - 1])
     return l[0], deltas
 
+
 def decode_deltas(start, enc_deltas):
     deltas = enc_deltas.tolist()
     l = [start]
     for i in range(1, len(deltas)):
-        l.append(l[i-1] + deltas[i])
+        l.append(l[i - 1] + deltas[i])
     l.append(l[-1] + deltas[-1])
     return l
 
+
 def _print(x, newline=True):
     import sys
-    fmt = newline and '%s\n' or '%s'
+
+    fmt = newline and "%s\n" or "%s"
     sys.stdout.write(fmt % x)
+
 
 def test():
     import random
+
     for size in [10, 20, 50, 100, 200]:
         l = [random.randint(1, size) for i in range(50)]
         c = encode(random.randint(1, 16), l)
@@ -194,9 +202,11 @@ def test():
             _print(l)
             _print(l2)
 
+
 def pickle_efficiency():
     import pickle
     import random
+
     for m in [4, 8, 12]:
         for size in [10, 20, 50, 100, 200, 500, 1000, 2000, 5000]:
             for elt_range in [10, 20, 50, 100, 200, 500, 1000]:
@@ -209,6 +219,7 @@ def pickle_efficiency():
                     _print("win")
                 else:
                     _print("lose")
+
 
 if __name__ == "__main__":
     test()

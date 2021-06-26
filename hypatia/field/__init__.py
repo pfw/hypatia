@@ -33,12 +33,13 @@ from .._compat import string_types
 
 _marker = []
 
+
 @implementer(
-        interfaces.IIndex,
-        interfaces.IIndexStatistics,
-        )
+    interfaces.IIndex,
+    interfaces.IIndexStatistics,
+)
 class FieldIndex(BaseIndexMixin, persistent.Persistent):
-    """ Field indexing.
+    """Field indexing.
 
     Query types supported:
 
@@ -72,8 +73,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
             self.family = family
         if not callable(discriminator):
             if not isinstance(discriminator, string_types):
-                raise ValueError('discriminator value must be callable or a '
-                                 'string')
+                raise ValueError("discriminator value must be callable or a " "string")
         self.discriminator = discriminator
         self.reset()
 
@@ -87,8 +87,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         self._not_indexed = self.family.IF.TreeSet()
 
     def unique_values(self):
-        """ Return the unique values in the index for all docids as an iterable
-        """
+        """Return the unique values in the index for all docids as an iterable"""
         return self._fwd_index.keys()
 
     def not_indexed(self):
@@ -128,7 +127,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         if docid in self._not_indexed:
             # Remove from set of unindexed docs if it was in there.
             self._not_indexed.remove(docid)
-        
+
         rev_index = self._rev_index
         if docid in rev_index:
             if docid in self._fwd_index.get(value, ()):
@@ -142,7 +141,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         if set is None:
             set = self.family.IF.TreeSet()
             self._fwd_index[value] = set
-            
+
         set.insert(docid)
 
         # increment doc count
@@ -152,8 +151,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         rev_index[docid] = value
 
     def unindex_doc(self, docid):
-        """See interface IIndexInjection.
-        """
+        """See interface IIndexInjection."""
         _not_indexed = self._not_indexed
         if docid in _not_indexed:
             _not_indexed.remove(docid)
@@ -161,14 +159,14 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         rev_index = self._rev_index
         value = rev_index.get(docid, _marker)
         if value is _marker:
-            return # not in index
+            return  # not in index
 
         del rev_index[docid]
 
         try:
             set = self._fwd_index[value]
             set.remove(docid)
-        except KeyError:    #pragma NO COVERAGE
+        except KeyError:  # pragma NO COVERAGE
             # This is fishy, but we don't want to raise an error.
             # We should probably log something.
             # but keep it from throwing a dirty exception
@@ -180,7 +178,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         self._num_docs.change(-1)
 
     def reindex_doc(self, docid, value):
-        """ See interface IIndexInjection """
+        """See interface IIndexInjection"""
         # the base index's index_doc method special-cases a reindex
         return self.index_doc(docid, value)
 
@@ -191,11 +189,11 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         limit=None,
         sort_type=None,
         raise_unsortable=True,
-        ):
+    ):
         if limit is not None:
             limit = int(limit)
             if limit < 1:
-                raise ValueError('limit must be 1 or greater')
+                raise ValueError("limit must be 1 or greater")
 
         if not docids:
             return []
@@ -219,7 +217,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
                 numdocs,
                 sort_type,
                 raise_unsortable,
-                )
+            )
         else:
             return self.sort_forward(
                 docids,
@@ -227,7 +225,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
                 numdocs,
                 sort_type,
                 raise_unsortable,
-                )
+            )
 
     def sort_forward(
         self,
@@ -236,14 +234,14 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         numdocs,
         sort_type=None,
         raise_unsortable=True,
-        ):
+    ):
 
         rlen = len(docids)
 
         # See http://www.zope.org/Members/Caseman/ZCatalog_for_2.6.1
         # for an overview of why we bother doing all this work to
         # choose the right sort algorithm.
-        
+
         if sort_type is None:
             if fwscan_wins(limit, rlen, numdocs):
                 # forward scan beats both n-best and timsort reliably
@@ -261,12 +259,12 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
             return self.scan_forward(docids, limit, raise_unsortable)
         elif sort_type == interfaces.NBEST:
             if limit is None:
-                raise ValueError('nbest requires a limit')
+                raise ValueError("nbest requires a limit")
             return self.nbest_ascending(docids, limit, raise_unsortable)
         elif sort_type == interfaces.TIMSORT:
             return self.timsort_ascending(docids, limit, raise_unsortable)
         else:
-            raise ValueError('Unknown sort type %s' % sort_type)
+            raise ValueError("Unknown sort type %s" % sort_type)
 
     def sort_reverse(
         self,
@@ -275,11 +273,11 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         numdocs,
         sort_type=None,
         raise_unsortable=True,
-        ):
+    ):
         if sort_type is None:
             rlen = len(docids)
             if limit:
-                if (limit < 300) or (limit/float(rlen) > 0.09):
+                if (limit < 300) or (limit / float(rlen) > 0.09):
                     sort_type = interfaces.NBEST
                 else:
                     sort_type = interfaces.TIMSORT
@@ -288,12 +286,12 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
 
         if sort_type == interfaces.NBEST:
             if limit is None:
-                raise ValueError('nbest requires a limit')
+                raise ValueError("nbest requires a limit")
             return self.nbest_descending(docids, limit, raise_unsortable)
         elif sort_type == interfaces.TIMSORT:
             return self.timsort_descending(docids, limit, raise_unsortable)
         else:
-            raise ValueError('Unknown sort type %s' % sort_type)
+            raise ValueError("Unknown sort type %s" % sort_type)
 
     def scan_forward(self, docids, limit=None, raise_unsortable=True):
         fwd_index = self._fwd_index
@@ -305,7 +303,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         for set in fwd_index.values():
             for docid in set:
                 if docid in docids:
-                    n+=1
+                    n += 1
                     docids.remove(docid)
                     yield docid
                     if limit and n >= limit:
@@ -315,19 +313,19 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
             raise Unsortable(docids)
 
     def nbest_ascending(self, docids, limit, raise_unsortable=False):
-        if limit is None: #pragma NO COVERAGE
-            raise RuntimeError('n-best used without limit')
+        if limit is None:  # pragma NO COVERAGE
+            raise RuntimeError("n-best used without limit")
 
         # lifted from heapq.nsmallest
 
         h = nsort(docids, self._rev_index, ASC)
         it = iter(h)
         result = sorted(islice(it, 0, limit))
-        if not result: #pragma NO COVERAGE
+        if not result:  # pragma NO COVERAGE
             return
         insort = bisect.insort
         pop = result.pop
-        los = result[-1]    # los --> Largest of the nsmallest
+        los = result[-1]  # los --> Largest of the nsmallest
         for elem in it:
             if los <= elem:
                 continue
@@ -347,8 +345,8 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
             raise Unsortable(missing_docids)
 
     def nbest_descending(self, docids, limit, raise_unsortable=True):
-        if limit is None: #pragma NO COVERAGE
-            raise RuntimeError('N-Best used without limit')
+        if limit is None:  # pragma NO COVERAGE
+            raise RuntimeError("N-Best used without limit")
         iterable = nsort(docids, self._rev_index, DESC)
         missing_docids = []
         for value, docid in heapq.nlargest(limit, iterable):
@@ -365,7 +363,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
             limit,
             reverse=False,
             raise_unsortable=raise_unsortable,
-            )
+        )
 
     def timsort_descending(self, docids, limit, raise_unsortable=True):
         return self._timsort(
@@ -373,7 +371,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
             limit,
             reverse=True,
             raise_unsortable=raise_unsortable,
-            )
+        )
 
     def _timsort(
         self,
@@ -381,8 +379,8 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         limit=None,
         reverse=False,
         raise_unsortable=True,
-        ):
-        
+    ):
+
         n = 0
         missing_docids = []
 
@@ -404,7 +402,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         if raise_unsortable and missing_docids:
             raise Unsortable(missing_docids)
 
-    def search(self, queries, operator='or'):
+    def search(self, queries, operator="or"):
         sets = []
         for q in queries:
             if isinstance(q, RangeValue):
@@ -418,7 +416,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
 
         if len(sets) == 1:
             result = sets[0]
-        elif operator == 'and':
+        elif operator == "and":
             for _, set in sorted([(len(x), x) for x in sets]):
                 result = self.family.IF.intersection(set, result)
         else:
@@ -428,12 +426,12 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
 
     def apply(self, q):
         if isinstance(q, dict):
-            val = q['query']
+            val = q["query"]
             if isinstance(val, RangeValue):
                 val = [val]
             elif not isinstance(val, (list, tuple)):
                 val = [val]
-            operator = q.get('operator', 'or')
+            operator = q.get("operator", "or")
             result = self.search(val, operator)
         else:
             if isinstance(q, tuple) and len(q) == 2:
@@ -442,7 +440,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
                 q = [q]
             elif not isinstance(q, (list, tuple)):
                 q = [q]
-            result = self.search(q, 'or')
+            result = self.search(q, "or")
 
         return result
 
@@ -484,7 +482,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
 
     def applyAny(self, values):
         queries = list(values)
-        return self.search(queries, operator='or')
+        return self.search(queries, operator="or")
 
     def any(self, value):
         return query.Any(self, value)
@@ -498,9 +496,9 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
     def applyInRange(self, start, end, excludemin=False, excludemax=False):
         return self.family.IF.multiunion(
             self._fwd_index.values(
-                start, end, excludemin=excludemin, excludemax=excludemax)
+                start, end, excludemin=excludemin, excludemax=excludemax
+            )
         )
-
 
     def inrange(self, start, end, excludemin=False, excludemax=False):
         return query.InRange(self, start, end, excludemin, excludemax)
@@ -511,12 +509,14 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
     def notinrange(self, start, end, excludemin=False, excludemax=False):
         return query.NotInRange(self, start, end, excludemin, excludemax)
 
+
 def nsort(docids, rev_index, missing):
     for docid in docids:
         try:
             yield (rev_index[docid], docid)
         except KeyError:
             yield (missing, docid)
+
 
 @total_ordering
 class _MissingValue(object):
@@ -533,10 +533,12 @@ class _MissingValue(object):
             return True
         return False
 
+
 # for nbest sort, we need 2 sentinels; one which is greater than anything else
 # (ASC) and one which is less than anything else (DESC).
 ASC = _MissingValue(True)
 DESC = _MissingValue(False)
+
 
 def fwscan_wins(limit, rlen, numdocs):
     """
@@ -557,28 +559,28 @@ def fwscan_wins(limit, rlen, numdocs):
 
     div = 65536.0
 
-    if docratio >= 16384/div:
+    if docratio >= 16384 / div:
         # forward scan tends to beat nbest or timsort reliably when
         # the rlen is greater than a quarter of the number of
         # documents in the index
         return True
 
-    if docratio >= 256/div:
+    if docratio >= 256 / div:
         # depending on the limit ratio, forward scan still has a
         # chance to win over nbest or timsort even if the rlen is
         # smaller than a quarter of the number of documents in the
         # index, beginning reliably at a docratio of 512/65536.0.  XXX
         # It'd be nice to figure out a more concise way to express
         # this.
-        if 512/div <= docratio < 1024/div and limitratio <= 4/div:
+        if 512 / div <= docratio < 1024 / div and limitratio <= 4 / div:
             return True
-        elif  1024/div <= docratio < 2048/div and limitratio <= 32/div:
+        elif 1024 / div <= docratio < 2048 / div and limitratio <= 32 / div:
             return True
-        elif 2048/div <= docratio < 4096/div and limitratio <= 128/div:
+        elif 2048 / div <= docratio < 4096 / div and limitratio <= 128 / div:
             return True
-        elif 4096/div <= docratio < 8192/div and limitratio <= 512/div:
+        elif 4096 / div <= docratio < 8192 / div and limitratio <= 512 / div:
             return True
-        elif 8192/div <= docratio < 16384/div and limitratio <= 4096/div:
+        elif 8192 / div <= docratio < 16384 / div and limitratio <= 4096 / div:
             return True
 
     return False
@@ -603,18 +605,16 @@ def nbest_ascending_wins(limit, rlen, numdocs):
     docratio = rlen / float(numdocs)
     div = 65536.0
 
-    if docratio < 4096/div:
+    if docratio < 4096 / div:
         # nbest tends to win when the rlen is less than about 6% of the
         # numdocs
         return True
 
-    if docratio == 1 and limitratio <= 8192/div:
+    if docratio == 1 and limitratio <= 8192 / div:
         return True
-    elif 1 > docratio >= 32768/div and limitratio <= 4096/div:
+    elif 1 > docratio >= 32768 / div and limitratio <= 4096 / div:
         return True
-    elif 32768/div > docratio >= 4096/div and limitratio <= 2048/div:
+    elif 32768 / div > docratio >= 4096 / div and limitratio <= 2048 / div:
         return True
 
     return False
-
-

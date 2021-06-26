@@ -8,6 +8,7 @@ from .._compat import string_types
 
 _marker = ()
 
+
 @implementer(IIndex)
 class FacetIndex(KeywordIndex):
     """Facet index.
@@ -34,8 +35,7 @@ class FacetIndex(KeywordIndex):
     def __init__(self, discriminator, facets, family=None):
         if not callable(discriminator):
             if not isinstance(discriminator, string_types):
-                raise ValueError('discriminator value must be callable or a '
-                                 'string')
+                raise ValueError("discriminator value must be callable or a " "string")
         self.discriminator = discriminator
         if family is not None:
             self.family = family
@@ -50,7 +50,7 @@ class FacetIndex(KeywordIndex):
         return default
 
     def index_doc(self, docid, obj):
-        """ Pass in an integer document id and an object supporting a
+        """Pass in an integer document id and an object supporting a
         sequence of facet specifiers ala ['style:gucci:handbag'] via
         the discriminator"""
         value = self.discriminate(obj, _marker)
@@ -72,10 +72,10 @@ class FacetIndex(KeywordIndex):
 
         for facet in value:
             L = []
-            categories = facet.split(':')
+            categories = facet.split(":")
             for category in categories:
                 L.append(category)
-                facet_candidate = ':'.join(L)
+                facet_candidate = ":".join(L)
                 for fac in self.facets:
                     if fac == facet_candidate:
                         changed = True
@@ -96,7 +96,7 @@ class FacetIndex(KeywordIndex):
         return value
 
     def counts(self, docids, omit_facets=()):
-        """ Given a set of docids (usually returned from query),
+        """Given a set of docids (usually returned from query),
         provide count information for further facet narrowing.
         Optionally omit count information for facets and their
         ancestors that are in 'omit_facets' (a sequence of facets)"""
@@ -105,13 +105,12 @@ class FacetIndex(KeywordIndex):
 
         for omit_facet in omit_facets:
             L = []
-            categories = omit_facet.split(':')
+            categories = omit_facet.split(":")
             for category in categories:
                 L.append(category)
-                effective_omits.insert(':'.join(L))
+                effective_omits.insert(":".join(L))
 
-        include_facets = self.family.OO.difference(self.facets,
-                                                   effective_omits)
+        include_facets = self.family.OO.difference(self.facets, effective_omits)
 
         counts = {}
         isect_cache = {}
@@ -122,7 +121,8 @@ class FacetIndex(KeywordIndex):
             appropriate_facets = isect_cache.get(ck)
             if appropriate_facets is None:
                 appropriate_facets = self.family.OO.intersection(
-                    include_facets, available_facets)
+                    include_facets, available_facets
+                )
                 isect_cache[ck] = appropriate_facets
             for facet in appropriate_facets:
                 count = counts.get(facet, 0)
@@ -137,4 +137,3 @@ def cachekey(set):
     for item in sorted(list(set)):
         h.update(make_binary(item))
     return h.hexdigest()
-

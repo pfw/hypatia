@@ -26,28 +26,26 @@ from BTrees.IOBTree import IOBTree
 from ..interfaces import (
     IIndexInjection,
     IIndexStatistics,
-    )
+)
 from .interfaces import (
     IExtendedQuerying,
     ILexiconBasedIndex,
-    )
+)
 from . import widcode
 from .setops import (
     mass_weightedIntersection,
     mass_weightedUnion,
-    )
+)
 
-@implementer(
-    IIndexInjection,
-    IIndexStatistics,
-    ILexiconBasedIndex,
-    IExtendedQuerying
-    )
+
+@implementer(IIndexInjection, IIndexStatistics, ILexiconBasedIndex, IExtendedQuerying)
 class BaseIndex(Persistent):
 
     family = BTrees.family64
 
-    lexicon = property(lambda self: self._lexicon,)
+    lexicon = property(
+        lambda self: self._lexicon,
+    )
 
     def __init__(self, lexicon, family=None):
         if family is not None:
@@ -109,7 +107,7 @@ class BaseIndex(Persistent):
             wids = self.get_words(docid)
             for wid in wids:
                 words.append(self._lexicon.get_word(wid))
-            return u(' ').join(words)
+            return u(" ").join(words)
         except KeyError:
             return default
 
@@ -200,7 +198,7 @@ class BaseIndex(Persistent):
     def search(self, term):
         wids = self._lexicon.termToWordIds(term)
         if not wids:
-            return None # All docs match
+            return None  # All docs match
         wids = self._remove_oov_wids(wids)
         return mass_weightedUnion(self._search_wids(wids), self.family)
 
@@ -275,7 +273,7 @@ class BaseIndex(Persistent):
         # holds up to 120 key-value pairs in a single bucket.
         doc2score = self._wordinfo.get(wid)
         if doc2score is None:
-            doc2score = {} # XXX Holy ConflictError, Batman!
+            doc2score = {}  # XXX Holy ConflictError, Batman!
             try:
                 self.word_count.change(1)
             except AttributeError:
@@ -288,11 +286,10 @@ class BaseIndex(Persistent):
             # Obscure:  First check the type.  If it's not a dict, it
             # can't need conversion, and then we can avoid an expensive
             # len(IFBTree).
-            if (isinstance(doc2score, type({})) and
-                len(doc2score) == self.DICT_CUTOFF):
+            if isinstance(doc2score, type({})) and len(doc2score) == self.DICT_CUTOFF:
                 doc2score = self.family.IF.BTree(doc2score)
         doc2score[docid] = f
-        self._wordinfo[wid] = doc2score # not redundant:  Persistency!
+        self._wordinfo[wid] = doc2score  # not redundant:  Persistency!
 
     #    self._mass_add_wordinfo(wid2weight, docid)
     #
@@ -311,11 +308,10 @@ class BaseIndex(Persistent):
             if doc2score is None:
                 doc2score = {}
                 new_word_count += 1
-            elif (isinstance(doc2score, dicttype) and
-                  len(doc2score) == self.DICT_CUTOFF):
+            elif isinstance(doc2score, dicttype) and len(doc2score) == self.DICT_CUTOFF:
                 doc2score = self.family.IF.BTree(doc2score)
             doc2score[docid] = weight
-            self._wordinfo[wid] = doc2score # not redundant:  Persistency!
+            self._wordinfo[wid] = doc2score  # not redundant:  Persistency!
         try:
             self.word_count.change(new_word_count)
         except AttributeError:
@@ -326,7 +322,7 @@ class BaseIndex(Persistent):
         doc2score = self._wordinfo[wid]
         del doc2score[docid]
         if doc2score:
-            self._wordinfo[wid] = doc2score # not redundant:  Persistency!
+            self._wordinfo[wid] = doc2score  # not redundant:  Persistency!
         else:
             del self._wordinfo[wid]
             try:
@@ -334,6 +330,7 @@ class BaseIndex(Persistent):
             except AttributeError:
                 # upgrade word_count to Length object
                 self.word_count = Length.Length(len(self._wordinfo))
+
 
 def inverse_doc_frequency(term_count, num_items):
     """Return the inverse doc frequency for a term,

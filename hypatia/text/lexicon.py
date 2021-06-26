@@ -33,10 +33,9 @@ from .._compat import u
 
 @implementer(ILexicon)
 class Lexicon(Persistent):
-
     def __init__(self, *pipeline):
         self._wids = OIBTree()  # word -> wid
-        self._words = IOBTree() # wid -> word
+        self._words = IOBTree()  # wid -> word
         # wid 0 is reserved for words that aren't in the lexicon (OOV -- out
         # of vocabulary).  This can happen, e.g., if a query contains a word
         # we never saw before, and that isn't a known stopword (or otherwise
@@ -61,13 +60,13 @@ class Lexicon(Persistent):
 
     def sourceToWordIds(self, text):
         if text is None:
-            text = ''
+            text = ""
         last = _text2list(text)
         for element in self._pipeline:
             last = element.process(last)
         if not isinstance(self.word_count, Length):
             # Make sure word_count is overridden with a BTrees.Length.Length
-            self.word_count = Length(self.word_count())        
+            self.word_count = Length(self.word_count())
         # Strategically unload the length value so that we get the most
         # recent value written to the database to minimize conflicting wids
         # Because length is independent, this will load the most
@@ -117,8 +116,7 @@ class Lexicon(Persistent):
         if not prefix:
             # The pattern starts with a globbing character.
             # This is too efficient, so we raise an exception.
-            raise QueryError(
-                "pattern %r shouldn't start with glob character" % pattern)
+            raise QueryError("pattern %r shouldn't start with glob character" % pattern)
         pat = prefix
         for c in pattern:
             if c == "*":
@@ -129,7 +127,7 @@ class Lexicon(Persistent):
                 pat += re.escape(c)
         pat += "$"
         prog = re.compile(pat)
-        keys = self._wids.keys(prefix) # Keys starting at prefix
+        keys = self._wids.keys(prefix)  # Keys starting at prefix
         wids = []
         for key in keys:
             if not key.startswith(prefix):
@@ -154,22 +152,25 @@ class Lexicon(Persistent):
             count.change(1)
         return count()
 
+
 def _text2list(text):
     # Helper: splitter input may be a string or a list of strings
     try:
-        text + u('')
+        text + u("")
     except:
         return text
     else:
         return [text]
 
+
 # Sample pipeline elements
+
 
 @implementer(ISplitter)
 class Splitter(object):
 
     rx = re.compile(r"(?u)\w+")
-    rxGlob = re.compile(r"(?u)\w+[\w*?]*") # See globToWordIds() above
+    rxGlob = re.compile(r"(?u)\w+[\w*?]*")  # See globToWordIds() above
 
     def process(self, lst):
         result = []
@@ -183,11 +184,12 @@ class Splitter(object):
             result += self.rxGlob.findall(s)
         return result
 
+
 @implementer(IPipelineElement)
 class CaseNormalizer(object):
-
     def process(self, lst):
         return [w.lower() for w in lst]
+
 
 @implementer(IPipelineElement)
 class StopWordRemover(object):
@@ -196,6 +198,7 @@ class StopWordRemover(object):
 
     def process(self, lst):
         return [w for w in lst if w not in self.dict]
+
 
 class StopWordAndSingleCharRemover(StopWordRemover):
 

@@ -18,18 +18,21 @@ import BTrees
 
 _marker = object()
 
+
 class Test_mass_weightedIntersection(unittest.TestCase):
 
     family = BTrees.family64
 
     def _callFUT(self, L, family=_marker):
         from ..setops import mass_weightedIntersection
+
         if family is _marker:
             return mass_weightedIntersection(L)
         return mass_weightedIntersection(L, family)
 
     def test_empty_list_no_family(self):
         from BTrees.LFBTree import LFBucket
+
         t = self._callFUT([])
         self.assertEqual(len(t), 0)
         self.assertEqual(t.__class__, LFBucket)
@@ -37,6 +40,7 @@ class Test_mass_weightedIntersection(unittest.TestCase):
     def test_empty_list_family32(self):
         import BTrees
         from BTrees.IFBTree import IFBucket
+
         t = self._callFUT([], BTrees.family32)
         self.assertEqual(len(t), 0)
         self.assertEqual(t.__class__, IFBucket)
@@ -44,6 +48,7 @@ class Test_mass_weightedIntersection(unittest.TestCase):
     def test_empty_list_family64(self):
         import BTrees
         from BTrees.LFBTree import LFBucket
+
         t = self._callFUT([], BTrees.family64)
         self.assertEqual(len(t), 0)
         self.assertEqual(t.__class__, LFBucket)
@@ -70,7 +75,7 @@ class Test_mass_weightedIntersection(unittest.TestCase):
             result = self._callFUT([(x, factor)])
             self.assertEqual(allkeys, list(result.keys()))
             for key in x.keys():
-                self.assertEqual(result[key], x[key]*factor)
+                self.assertEqual(result[key], x[key] * factor)
 
     def test_scalar_multiply_bucket(self):
         IFBucket = self.family.IF.Bucket
@@ -80,7 +85,7 @@ class Test_mass_weightedIntersection(unittest.TestCase):
             result = self._callFUT([(x, factor)])
             self.assertEqual(allkeys, list(result.keys()))
             for key in x.keys():
-                self.assertEqual(result[key], x[key]*factor)
+                self.assertEqual(result[key], x[key] * factor)
 
     def test_pairs(self):
         IFBTree = self.family.IF.BTree
@@ -108,6 +113,7 @@ class Test_mass_weightedIntersection(unittest.TestCase):
 
     def testMany(self):
         import random
+
         IFBTree = self.family.IF.BTree
         N = 15  # number of IFBTrees to feed in
         L = []
@@ -116,11 +122,11 @@ class Test_mass_weightedIntersection(unittest.TestCase):
         for i in range(N):
             t = IFBTree()
             t[commonkey] = i
-            for j in range(N-i):
+            for j in range(N - i):
                 key = i + j
                 allkeys[key] = 1
-                t[key] = N*i + j
-            L.append((t, i+1))
+                t[key] = N * i + j
+            L.append((t, i + 1))
         random.shuffle(L)
         allkeys = sorted(allkeys)
 
@@ -140,18 +146,21 @@ class Test_mass_weightedIntersection(unittest.TestCase):
         got = self._callFUT(L)
         self.assertEqual(expected, list(got.items()))
 
+
 class Test_mass_weightedUnion(unittest.TestCase):
 
     family = BTrees.family64
 
     def _callFUT(self, L, family=_marker):
         from ..setops import mass_weightedUnion
+
         if family is _marker:
             return mass_weightedUnion(L)
         return mass_weightedUnion(L, family)
 
     def test_empty_list_no_family(self):
         from BTrees.LFBTree import LFBucket
+
         t = self._callFUT([])
         self.assertEqual(len(t), 0)
         self.assertEqual(t.__class__, LFBucket)
@@ -159,6 +168,7 @@ class Test_mass_weightedUnion(unittest.TestCase):
     def test_empty_list_family32(self):
         import BTrees
         from BTrees.IFBTree import IFBucket
+
         t = self._callFUT([], BTrees.family32)
         self.assertEqual(len(t), 0)
         self.assertEqual(t.__class__, IFBucket)
@@ -166,6 +176,7 @@ class Test_mass_weightedUnion(unittest.TestCase):
     def test_empty_list_family64(self):
         import BTrees
         from BTrees.LFBTree import LFBucket
+
         t = self._callFUT([], BTrees.family64)
         self.assertEqual(len(t), 0)
         self.assertEqual(t.__class__, LFBucket)
@@ -192,7 +203,7 @@ class Test_mass_weightedUnion(unittest.TestCase):
             result = self._callFUT([(x, factor)])
             self.assertEqual(allkeys, list(result.keys()))
             for key in x.keys():
-                self.assertEqual(result[key], x[key]*factor)
+                self.assertEqual(result[key], x[key] * factor)
 
     def test_scalar_multiply_bucket(self):
         IFBucket = self.family.IF.Bucket
@@ -202,7 +213,7 @@ class Test_mass_weightedUnion(unittest.TestCase):
             result = self._callFUT([(x, factor)])
             self.assertEqual(allkeys, list(result.keys()))
             for key in x.keys():
-                self.assertEqual(result[key], x[key]*factor)
+                self.assertEqual(result[key], x[key] * factor)
 
     def test_pairs(self):
         IFBucket = self.family.IF.Bucket
@@ -230,6 +241,7 @@ class Test_mass_weightedUnion(unittest.TestCase):
 
     def test_many(self):
         import random
+
         IFBTree = self.family.IF.BTree
         N = 15  # number of IFBTrees to feed in
         L = []
@@ -238,11 +250,11 @@ class Test_mass_weightedUnion(unittest.TestCase):
         for i in range(N):
             t = IFBTree()
             t[commonkey] = i
-            for j in range(N-i):
+            for j in range(N - i):
                 key = i + j
                 allkeys[key] = 1
-                t[key] = N*i + j
-            L.append((t, i+1))
+                t[key] = N * i + j
+            L.append((t, i + 1))
         random.shuffle(L)
         allkeys = sorted(allkeys)
 
@@ -256,4 +268,3 @@ class Test_mass_weightedUnion(unittest.TestCase):
         # print 'union', expected
         got = self._callFUT(L)
         self.assertEqual(expected, list(got.items()))
-

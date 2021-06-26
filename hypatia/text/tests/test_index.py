@@ -15,11 +15,13 @@
 """
 import unittest
 
+
 class IndexTestBase:
     # Subclasses must define '_getTargetClass' and '_getBTreesFamily'
     def _makeOne(self):
         from ..lexicon import Lexicon
         from ..lexicon import Splitter
+
         lexicon = Lexicon(Splitter())
         return self._getTargetClass()(lexicon, family=self._getBTreesFamily())
 
@@ -33,8 +35,7 @@ class IndexTestBase:
         self.assertEqual(len(index._wordinfo), word_count)
         self.assertEqual(len(index._docwords), 1)
         self.assertEqual(len(index.get_words(docid)), word_count)
-        self.assertEqual(len(index._wordinfo),
-                         index.word_count())
+        self.assertEqual(len(index._wordinfo), index.word_count())
         for map in index._wordinfo.values():
             self.assertEqual(len(map), 1)
             self.assertTrue(docid in map)
@@ -43,8 +44,7 @@ class IndexTestBase:
         self.assertEqual(len(index._docweight), 0)
         self.assertEqual(len(index._wordinfo), 0)
         self.assertEqual(len(index._docwords), 0)
-        self.assertEqual(len(index._wordinfo),
-                         index.word_count())
+        self.assertEqual(len(index._wordinfo), index.word_count())
 
     def test_empty(self):
         index = self._makeOne()
@@ -89,8 +89,7 @@ class IndexTestBase:
         self.assertEqual(len(index._wordinfo), 8)
         self.assertEqual(len(index._docwords), 2)
         self.assertEqual(len(index.get_words(2)), 4)
-        self.assertEqual(len(index._wordinfo),
-                         index.word_count())
+        self.assertEqual(len(index._wordinfo), index.word_count())
         wids = index._lexicon.termToWordIds("document")
         self.assertEqual(len(wids), 1)
         document_wid = wids[0]
@@ -115,8 +114,7 @@ class IndexTestBase:
         self.assertEqual(len(index._wordinfo), 4)
         self.assertEqual(len(index._docwords), 1)
         self.assertEqual(len(index.get_words(2)), 4)
-        self.assertEqual(len(index._wordinfo),
-                         index.word_count())
+        self.assertEqual(len(index._wordinfo), index.word_count())
         for map in index._wordinfo.values():
             self.assertEqual(len(map), 1)
             self.assertTrue(2 in map)
@@ -129,8 +127,7 @@ class IndexTestBase:
         self.assertEqual(len(index._wordinfo), 5)
         self.assertEqual(len(index._docwords), 1)
         self.assertEqual(len(index.get_words(1)), 7)
-        self.assertEqual(len(index._wordinfo),
-                         index.word_count())
+        self.assertEqual(len(index._wordinfo), index.word_count())
         wids = index._lexicon.termToWordIds("repeat")
         self.assertEqual(len(wids), 1)
         for wid, map in index._wordinfo.items():
@@ -139,20 +136,20 @@ class IndexTestBase:
 
     def test_simple_query_oneresult(self):
         index = self._makeOne()
-        index.index_doc(1, 'not the same document')
+        index.index_doc(1, "not the same document")
         results = index.search("document")
         self.assertEqual(list(results.keys()), [1])
 
     def test_simple_query_noresults(self):
         index = self._makeOne()
-        index.index_doc(1, 'not the same document')
+        index.index_doc(1, "not the same document")
         results = index.search("frobnicate")
         self.assertEqual(list(results.keys()), [])
 
     def test_query_oneresult(self):
         index = self._makeOne()
-        index.index_doc(1, 'not the same document')
-        index.index_doc(2, 'something about something else')
+        index.index_doc(1, "not the same document")
+        index.index_doc(2, "something about something else")
         results = index.search("document")
         self.assertEqual(list(results.keys()), [1])
 
@@ -173,43 +170,50 @@ class IndexTestBase:
         results = index.search_glob("b*")
         self.assertEqual(list(results.keys()), [1, 2, 3])
 
-class CosineIndexTest32(IndexTestBase, unittest.TestCase):
 
+class CosineIndexTest32(IndexTestBase, unittest.TestCase):
     def _getTargetClass(self):
         from ..cosineindex import CosineIndex
+
         return CosineIndex
 
     def _getBTreesFamily(self):
         import BTrees
+
         return BTrees.family32
+
 
 class OkapiIndexTest32(IndexTestBase, unittest.TestCase):
-
     def _getTargetClass(self):
         from ..okapiindex import OkapiIndex
+
         return OkapiIndex
 
     def _getBTreesFamily(self):
         import BTrees
+
         return BTrees.family32
 
-class CosineIndexTest64(IndexTestBase, unittest.TestCase):
 
+class CosineIndexTest64(IndexTestBase, unittest.TestCase):
     def _getTargetClass(self):
         from ..cosineindex import CosineIndex
+
         return CosineIndex
 
     def _getBTreesFamily(self):
         import BTrees
+
         return BTrees.family64
 
-class OkapiIndexTest64(IndexTestBase, unittest.TestCase):
 
+class OkapiIndexTest64(IndexTestBase, unittest.TestCase):
     def _getTargetClass(self):
         from ..okapiindex import OkapiIndex
+
         return OkapiIndex
 
     def _getBTreesFamily(self):
         import BTrees
-        return BTrees.family64
 
+        return BTrees.family64

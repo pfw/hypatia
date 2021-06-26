@@ -11,7 +11,8 @@ from .. import exc
 from ..interfaces import (
     IResultSet,
     STABLE,
-    )
+)
+
 
 @implementer(IResultSet)
 class ResultSet(object):
@@ -20,22 +21,23 @@ class ResultSet(object):
     family = BTrees.family64
 
     def __init__(self, ids, numids, resolver, sort_type=None):
-        self.ids = ids # only guaranteed to be iterable, not sliceable
+        self.ids = ids  # only guaranteed to be iterable, not sliceable
         self.numids = numids
         self.resolver = resolver
         self.sort_type = sort_type
-        
+
     def __len__(self):
         return self.numids
 
-    def sort(self, index, reverse=False, limit=None, sort_type=None,
-             raise_unsortable=True):
+    def sort(
+        self, index, reverse=False, limit=None, sort_type=None, raise_unsortable=True
+    ):
         if sort_type is None:
             sort_type = self.sort_type
-        
+
         ids = self.ids
 
-        if not hasattr(ids, '__len__'):
+        if not hasattr(ids, "__len__"):
             # indexes have no obligation to be able to sort generators
             ids = list(ids)
             self.ids = ids
@@ -46,7 +48,7 @@ class ResultSet(object):
             limit=limit,
             sort_type=sort_type,
             raise_unsortable=raise_unsortable,
-            )
+        )
 
         numids = self.numids
 
@@ -63,7 +65,7 @@ class ResultSet(object):
                 # if self.ids is not a list or a tuple, allow this result set
                 # to be iterated after first() is called and allow first() to
                 # be idempotent
-                if not hasattr(self.ids, '__len__'):
+                if not hasattr(self.ids, "__len__"):
                     self.ids = itertools.chain([id_], self.ids)
                 return id_
         else:
@@ -71,7 +73,7 @@ class ResultSet(object):
                 # if self.ids is not a list or a tuple, allow this result set
                 # to be iterated after first() is called and allow first() to
                 # be idempotent
-                if not hasattr(self.ids, '__len__'):
+                if not hasattr(self.ids, "__len__"):
                     self.ids = itertools.chain([id_], self.ids)
                 return resolver(id_)
 
@@ -98,22 +100,23 @@ class ResultSet(object):
         return iter(self.all())
 
     def intersect(self, docids):
-        """ Intersect this resultset with a sequence of docids or
-        another resultset.  Returns a new ResultSet. """
+        """Intersect this resultset with a sequence of docids or
+        another resultset.  Returns a new ResultSet."""
         # NB: we can't use an intersection function here because
         # self.ids may be a generator
         if isinstance(docids, ResultSet):
             docids = docids.ids
-        filtered_ids = [ x for x in self.ids if x in docids ]
+        filtered_ids = [x for x in self.ids if x in docids]
         return self.__class__(filtered_ids, len(filtered_ids), self.resolver)
 
+
 class BaseIndexMixin(object):
-    """ Mixin class for indexes that implements common behavior """
+    """Mixin class for indexes that implements common behavior"""
 
     family = BTrees.family64
 
     def discriminate(self, obj, default):
-        """ See interface IIndexInjection """
+        """See interface IIndexInjection"""
         if callable(self.discriminator):
             value = self.discriminator(obj, _marker)
         else:
@@ -121,32 +124,30 @@ class BaseIndexMixin(object):
 
         if value is _marker:
             return default
-        
+
         if isinstance(value, Persistent):
-            raise ValueError('Catalog cannot index persistent object %s' %
-                             value)
+            raise ValueError("Catalog cannot index persistent object %s" % value)
 
         if isinstance(value, Broken):
-            raise ValueError('Catalog cannot index broken object %s' %
-                             value)
+            raise ValueError("Catalog cannot index broken object %s" % value)
 
         return value
 
     def reindex_doc(self, docid, obj):
-        """ See interface IIndexInjection """
+        """See interface IIndexInjection"""
         self.unindex_doc(docid)
         self.index_doc(docid, obj)
 
     def indexed_count(self):
-        """ See IIndexedDocuments """
+        """See IIndexedDocuments"""
         return len(self.indexed())
 
     def not_indexed_count(self):
-        """ See IIndexedDocuments """
+        """See IIndexedDocuments"""
         return len(self.not_indexed())
 
     def docids(self):
-        """ See IIndexedDocuments """
+        """See IIndexedDocuments"""
         not_indexed = self.not_indexed()
         indexed = self.indexed()
         if len(not_indexed) == 0:
@@ -157,11 +158,11 @@ class BaseIndexMixin(object):
         return self.family.IF.union(not_indexed, indexed)
 
     def docids_count(self):
-        """ See IIndexedDocuments """
+        """See IIndexedDocuments"""
         return len(self.docids())
 
     def apply_intersect(self, query, docids):
-        """ Default apply_intersect implementation """
+        """Default apply_intersect implementation"""
         result = self.apply(query)
         if docids is None:
             return result
@@ -180,10 +181,10 @@ class BaseIndexMixin(object):
         # representation
         return getattr(
             self,
-            '__name__',
+            "__name__",
             str(self),
-            )
-        
+        )
+
     def resultset_from_query(self, query, names=None, resolver=None):
         # default resultset factory; meant to be overridden by systems that
         # have a default resolver.  NB: although the default implementation
@@ -195,8 +196,9 @@ class BaseIndexMixin(object):
         return ResultSet(docids, numdocs, resolver)
 
     def flush(self, *arg, **kw):
-        """ Hookable by upstream systems"""
+        """Hookable by upstream systems"""
         pass
+
 
 class RichComparisonMixin(object):
     # Stolen from http://www.voidspace.org.uk/python/recipebook.shtml#comparison
@@ -209,7 +211,7 @@ class RichComparisonMixin(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-    
+
     def __gt__(self, other):
         return not (self.__lt__(other) or self.__eq__(other))
 
@@ -218,4 +220,3 @@ class RichComparisonMixin(object):
 
     def __ge__(self, other):
         return self.__eq__(other) or self.__gt__(other)
-

@@ -20,19 +20,19 @@ from hypatia.interfaces import (
     IIndex,
     IIndexStatistics,
     IIndexSort,
-    )
+)
 
 from .lexicon import (
     CaseNormalizer,
     Lexicon,
     Splitter,
     StopWordRemover,
-    )
+)
 from .okapiindex import OkapiIndex
 from .queryparser import QueryParser
 from .parsetree import ParseError
 
-from ..util import BaseIndexMixin 
+from ..util import BaseIndexMixin
 from .. import query
 from .._compat import string_types
 from .._compat import _iteritems
@@ -40,27 +40,22 @@ from .._compat import _maxint
 
 _marker = object()
 
-@implementer(
-    IIndex,
-    IIndexSort,
-    IIndexStatistics
-    )
+
+@implementer(IIndex, IIndexSort, IIndexStatistics)
 class TextIndex(BaseIndexMixin, Persistent):
-    def __init__(self, discriminator, lexicon=None, index=None,
-                 family=None):
+    def __init__(self, discriminator, lexicon=None, index=None, family=None):
         if family is not None:
             self.family = family
         if not callable(discriminator):
             if not isinstance(discriminator, string_types):
-                raise ValueError('discriminator value must be callable or a '
-                                 'string')
+                raise ValueError("discriminator value must be callable or a " "string")
         self.discriminator = discriminator
         _explicit_lexicon = True
         if lexicon is None:
             _explicit_lexicon = False
             lexicon = Lexicon(Splitter(), CaseNormalizer(), StopWordRemover())
         if index is None:
-            index = OkapiIndex(lexicon, family=self.family) # override family
+            index = OkapiIndex(lexicon, family=self.family)  # override family
         self.lexicon = _explicit_lexicon and lexicon or index.lexicon
         self.index = index
         self.reset()
@@ -117,8 +112,8 @@ class TextIndex(BaseIndexMixin, Persistent):
         return tree
 
     def check_query(self, querytext):
-        """ Returns True if the querytext can be turned into a parse tree,
-        returns False if otherwise. """
+        """Returns True if the querytext can be turned into a parse tree,
+        returns False if otherwise."""
         try:
             self.parse_query(querytext)
             return True
@@ -130,7 +125,7 @@ class TextIndex(BaseIndexMixin, Persistent):
         results = tree.executeQuery(self.index)
         if results:
             qw = self.index.query_weight(tree.terms())
-            
+
             # Hack to avoid ZeroDivisionError
             if qw == 0:
                 qw = 1.0
@@ -139,14 +134,14 @@ class TextIndex(BaseIndexMixin, Persistent):
 
             for docid, score in _iteritems(results):
                 try:
-                    results[docid] = score/qw
+                    results[docid] = score / qw
                 except TypeError:
                     # We overflowed the score, perhaps wildly unlikely.
                     # Who knows.
                     results[docid] = _maxint() / 10.0
 
         return results
- 
+
     def applyContains(self, value):
         return self.apply(value)
 
@@ -165,8 +160,9 @@ class TextIndex(BaseIndexMixin, Persistent):
     applyNotEq = applyNotContains
     noteq = notcontains
 
-    def sort(self, result, reverse=False, limit=None, sort_type=None,
-             raise_unsortable=True):
+    def sort(
+        self, result, reverse=False, limit=None, sort_type=None, raise_unsortable=True
+    ):
         """Sort by text relevance.
 
         This only works if the query includes at least one text query,
@@ -181,11 +177,12 @@ class TextIndex(BaseIndexMixin, Persistent):
         if not result:
             return result
 
-        if not hasattr(result, 'items'):
+        if not hasattr(result, "items"):
             raise TypeError(
                 "Unable to sort by relevance because the search "
                 "result does not contain weights. To produce a weighted "
-                "result, include a text search in the query.")
+                "result, include a text search in the query."
+            )
 
         items = [(weight, docid) for (docid, weight) in result.items()]
         # when reverse is false, output largest weight first.
@@ -195,4 +192,3 @@ class TextIndex(BaseIndexMixin, Persistent):
         if limit:
             result = result[:limit]
         return result
-    

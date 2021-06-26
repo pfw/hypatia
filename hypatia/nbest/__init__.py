@@ -24,9 +24,9 @@ from zope.interface import implementer
 
 from .interfaces import INBest
 
+
 @implementer(INBest)
 class NBest(object):
-
     def __init__(self, N):
         "Build an NBest object to remember the N best-scoring objects."
 

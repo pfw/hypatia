@@ -17,8 +17,8 @@ from unittest import TestCase
 
 from . import NBest
 
-class NBestTest(TestCase):
 
+class NBestTest(TestCase):
     def testConstructor(self):
         self.assertRaises(ValueError, NBest, 0)
         self.assertRaises(ValueError, NBest, -1)
@@ -30,32 +30,33 @@ class NBestTest(TestCase):
 
     def testOne(self):
         nb = NBest(1)
-        nb.add('a', 0)
-        self.assertEqual(nb.getbest(), [('a', 0)])
+        nb.add("a", 0)
+        self.assertEqual(nb.getbest(), [("a", 0)])
 
-        nb.add('b', 1)
+        nb.add("b", 1)
         self.assertEqual(len(nb), 1)
         self.assertEqual(nb.capacity(), 1)
-        self.assertEqual(nb.getbest(), [('b', 1)])
+        self.assertEqual(nb.getbest(), [("b", 1)])
 
-        nb.add('c', -1)
+        nb.add("c", -1)
         self.assertEqual(len(nb), 1)
         self.assertEqual(nb.capacity(), 1)
-        self.assertEqual(nb.getbest(), [('b', 1)])
+        self.assertEqual(nb.getbest(), [("b", 1)])
 
-        nb.addmany([('d', 3), ('e', -6), ('f', 5), ('g', 4)])
+        nb.addmany([("d", 3), ("e", -6), ("f", 5), ("g", 4)])
         self.assertEqual(len(nb), 1)
         self.assertEqual(nb.capacity(), 1)
-        self.assertEqual(nb.getbest(), [('f', 5)])
+        self.assertEqual(nb.getbest(), [("f", 5)])
 
     def testMany(self):
         import random
+
         inputs = [(-i, i) for i in range(50)]
 
         reversed_inputs = list(reversed(inputs[:]))
 
         # Test the N-best for a variety of n (1, 6, 11, ... 50).
-        for n in range(1, len(inputs)+1, 5):
+        for n in range(1, len(inputs) + 1, 5):
             expected = list(reversed(inputs[-n:]))
 
             random_inputs = inputs[:]
@@ -77,7 +78,7 @@ class NBestTest(TestCase):
                 self.assertEqual(nb.capacity(), n)
                 self.assertEqual(nb.getbest(), expected)
 
-                for i in range(1, n+1):
+                for i in range(1, n + 1):
                     self.assertEqual(nb.pop_smallest(), expected[-i])
                 self.assertRaises(IndexError, nb.pop_smallest)
 
@@ -87,5 +88,4 @@ class NBestTest(TestCase):
             nb = NBest(n)
             nb.addmany(inputs)
             outputs = nb.getbest()
-            self.assertEqual(outputs, inputs[:len(outputs)])
-
+            self.assertEqual(outputs, inputs[: len(outputs)])
