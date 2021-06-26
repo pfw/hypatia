@@ -80,19 +80,19 @@ class OkapiIndexTestBase:
 
     def test_empty(self):
         index = self._makeOne()
-        self.assertEqual(index._totaldoclen(), 0)
+        assert index._totaldoclen() == 0
 
     def test_index_doc_updates_totaldoclen(self):
         index = self._makeOne()
         index.index_doc(1, "one two three")
         index.index_doc(2, "two three four")
-        self.assertEqual(index._totaldoclen(), 6)
+        assert index._totaldoclen() == 6
 
     def test_index_doc_existing_updates_totaldoclen(self):
         index = self._makeOne()
         index.index_doc(1, "one two three")
         index.index_doc(1, "two three four")
-        self.assertEqual(index._totaldoclen(), 3)
+        assert index._totaldoclen() == 3
 
     def test_index_doc_upgrades_totaldoclen(self):
         index = self._makeOne()
@@ -102,7 +102,7 @@ class OkapiIndexTestBase:
 
         index.index_doc(1, "one two three")
 
-        self.assertEqual(index._totaldoclen(), 3)
+        assert index._totaldoclen() == 3
 
     def test__search_wids_non_empty_wids(self):
         TEXT = "one two three"
@@ -110,12 +110,12 @@ class OkapiIndexTestBase:
         index.index_doc(1, TEXT)
         wids = [index._lexicon._wids[x] for x in TEXT.split()]
         relevances = index._search_wids(wids)
-        self.assertEqual(len(relevances), len(wids))
+        assert len(relevances) == len(wids)
         for relevance in relevances:
-            self.assertTrue(isinstance(relevance[0], index.family.IF.Bucket))
-            self.assertEqual(len(relevance[0]), 1)
-            self.assertTrue(isinstance(relevance[0][1], float))
-            self.assertTrue(isinstance(relevance[1], int))
+            assert isinstance(relevance[0], index.family.IF.Bucket)
+            assert len(relevance[0]) == 1
+            assert isinstance(relevance[0][1], float)
+            assert isinstance(relevance[1], int)
 
     def test__search_wids_old_totaldoclen_no_write_on_read(self):
         index = self._makeOne()
@@ -126,37 +126,37 @@ class OkapiIndexTestBase:
 
         relevances = index._search_wids([1])
 
-        self.assertTrue(isinstance(index._totaldoclen, int))
+        assert isinstance(index._totaldoclen, int)
 
     def test_query_weight_empty_wids(self):
         index = self._makeOne()
         index.index_doc(1, "one two three")
-        self.assertEqual(index.query_weight(()), 0.0)
+        assert index.query_weight(()) == 0.0
 
     def test_query_weight_oov_wids(self):
         index = self._makeOne()
         index.index_doc(1, "one two three")
-        self.assertEqual(index.query_weight(["nonesuch"]), 0.0)
+        assert index.query_weight(["nonesuch"]) == 0.0
 
     def test_query_weight_hit_single_occurence(self):
         index = self._makeOne()
         index.index_doc(1, "one two three")
-        self.assertTrue(0.0 < index.query_weight(["one"]))
+        assert 0.0 < index.query_weight(["one"])
 
     def test_query_weight_hit_multiple_occurences(self):
         index = self._makeOne()
         index.index_doc(1, "one one two three one")
-        self.assertTrue(0.0 < index.query_weight(["one"]))
+        assert 0.0 < index.query_weight(["one"])
 
 
-class OkapiIndexTest32(OkapiIndexTestBase, unittest.TestCase):
+class TestOkapiIndex32(OkapiIndexTestBase):
     def _getBTreesFamily(self):
         import BTrees
 
         return BTrees.family32
 
 
-class OkapiIndexTest64(OkapiIndexTestBase, unittest.TestCase):
+class TestOkapiIndex64(OkapiIndexTestBase):
     def _getBTreesFamily(self):
         import BTrees
 

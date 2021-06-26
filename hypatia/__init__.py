@@ -6,4 +6,4 @@ class RangeValue:
         self.end = end
 
     def as_tuple(self):
-        return (self.start, self.end)
+        return self.start, self.end

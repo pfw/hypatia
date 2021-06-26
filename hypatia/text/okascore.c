@@ -109,7 +109,7 @@ score(PyObject *self, PyObject *args)
 			Py_DECREF(d_and_f);
 			return NULL;
 		}
-		lenweight = B_FROM1 + B * PyInt_AsLong(doclen) / meandoclen;
+		lenweight = B_FROM1 + B * PyFloat_AsDouble(doclen) / meandoclen;
 
 		tf = f * K1_PLUS1 / (f + K1 * lenweight);
 		doc_score = PyFloat_FromDouble(tf * idf);

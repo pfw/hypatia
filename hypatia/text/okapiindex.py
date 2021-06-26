@@ -341,7 +341,9 @@ class OkapiIndex(BaseIndex):
                 d2f = self._wordinfo[t]  # map {docid -> f(docid, t)}
                 idf = inverse_doc_frequency(len(d2f), N)  # an unscaled float
                 result = self.family.IF.Bucket()
-                score(result, _items(d2f), docid2len, idf, meandoclen)
+                print("doc2len items:", list(docid2len.items()))
+                print('res:', type(result), 'd2f', type(_items(d2f)), 'docid2len:', type(docid2len), 'idf:', type(idf), 'meandoclen:', type(meandoclen))
+                score(result, list(d2f.items()), docid2len, int(idf), int(meandoclen))
                 L.append((result, 1))
             return L
 

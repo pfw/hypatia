@@ -26,7 +26,7 @@ from .. import interfaces
 from .. import RangeValue
 from .. import query
 
-from ..compat import total_ordering
+from functools import total_ordering
 from ..exc import Unsortable
 from ..util import BaseIndexMixin
 from .._compat import string_types

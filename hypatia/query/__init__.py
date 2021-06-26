@@ -800,6 +800,9 @@ class _AstParser(object):
         dotted_name.id = ".".join((name.id, node.attr))
         return dotted_name
 
+    def process_Constant(self, node, children):
+        return node.value
+
     def process_Str(self, node, children):
         return node.s
 
