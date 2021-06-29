@@ -77,6 +77,9 @@ install_requires = [
 ]
 
 testing_extras = ["coverage", "pytest"]
+if sys.version_info == (3, 6):
+    install_requires.append("dataclasses")
+
 docs_extras = ["Sphinx"]
 
 setup(
@@ -105,13 +108,14 @@ setup(
         "benchmark": ["PyChart"],
         "testing": testing_extras,
         "docs": docs_extras,
-        "spatial": ['pygeos'],
+        "spatial": ["pygeos"],
     },
     ext_modules=[
         Extension(
             "hypatia.text.okascore", [os.path.join("hypatia", "text", "okascore.c")]
         ),
     ],
+    python_requires=">=3.6",
     cmdclass={"build_ext": optional_build_ext},
     test_suite="hypatia",
 )
