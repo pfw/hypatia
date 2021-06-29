@@ -76,8 +76,8 @@ install_requires = [
     "zope.interface",
 ]
 
-testing_extras = ["coverage", "pytest"]
-if sys.version_info == (3, 6):
+testing_extras = ["coverage", "pytest", "pytest-cov"]
+if sys.version_info.major == 3 and sys.version_info.minor == 6:
     install_requires.append("dataclasses")
 
 docs_extras = ["Sphinx"]
