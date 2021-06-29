@@ -26,7 +26,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade coverage[toml] virtualenv tox tox-gh-actions                    
-          pip install -e ".[testing]"
+          pip install -e ".[testing,spatial]"
 
 
       - name: "Run tox targets for ${{ matrix.python-version }}"
