@@ -3,8 +3,6 @@ from zope.interface import implementer
 
 from ..keyword import KeywordIndex
 from ..interfaces import IIndex
-from .._compat import make_binary
-from .._compat import string_types
 
 _marker = ()
 
@@ -34,7 +32,7 @@ class FacetIndex(KeywordIndex):
 
     def __init__(self, discriminator, facets, family=None):
         if not callable(discriminator):
-            if not isinstance(discriminator, string_types):
+            if not isinstance(discriminator, str):
                 raise ValueError("discriminator value must be callable or a " "string")
         self.discriminator = discriminator
         if family is not None:
@@ -135,5 +133,5 @@ class FacetIndex(KeywordIndex):
 def cachekey(set):
     h = md5()
     for item in sorted(list(set)):
-        h.update(make_binary(item))
+        h.update(item if isinstance(item, bytes) else item.encode("ascii"))
     return h.hexdigest()

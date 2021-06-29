@@ -105,6 +105,7 @@ setup(
         "benchmark": ["PyChart"],
         "testing": testing_extras,
         "docs": docs_extras,
+        "spatial": ['pygeos'],
     },
     ext_modules=[
         Extension(

@@ -7,7 +7,6 @@ from zope.interface import implementer
 from ..interfaces import ICatalog
 from ..interfaces import ICatalogQuery
 from ..query import parse_query
-from .._compat import string_types
 
 
 @implementer(ICatalog)
@@ -100,7 +99,7 @@ class CatalogQuery(object):
     ):
         """Use the arguments to perform a query.  Return a tuple of
         (num, resultseq)."""
-        if isinstance(queryobject, string_types):
+        if isinstance(queryobject, str):
             queryobject = parse_query(queryobject, self.catalog)
         results = queryobject._apply(names)
         return self.sort(results, sort_index, limit, sort_type, reverse)

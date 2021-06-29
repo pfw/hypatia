@@ -29,7 +29,6 @@ from .. import query
 from functools import total_ordering
 from ..exc import Unsortable
 from ..util import BaseIndexMixin
-from .._compat import string_types
 
 _marker = []
 
@@ -72,7 +71,7 @@ class FieldIndex(BaseIndexMixin, persistent.Persistent):
         if family is not None:
             self.family = family
         if not callable(discriminator):
-            if not isinstance(discriminator, string_types):
+            if not isinstance(discriminator, str):
                 raise ValueError("discriminator value must be callable or a " "string")
         self.discriminator = discriminator
         self.reset()

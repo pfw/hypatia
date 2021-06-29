@@ -192,8 +192,6 @@ this measure (and optimizing it by not bothering to multiply by 1 <wink>).
 import os
 from BTrees.Length import Length
 
-from .._compat import _items
-from .._compat import _long
 from .baseindex import BaseIndex
 from .baseindex import inverse_doc_frequency
 
@@ -253,7 +251,7 @@ class OkapiIndex(BaseIndex):
             self._totaldoclen.change(delta)
         except AttributeError:
             # Opportunistically upgrade _totaldoclen attribute to Length object
-            self._totaldoclen = Length(_long(self._totaldoclen + delta))
+            self._totaldoclen = Length(self._totaldoclen + delta)
 
     # The workhorse.  Return a list of (IFBucket, weight) pairs, one pair
     # for each wid t in wids.  The IFBucket, times the weight, maps D to
@@ -342,7 +340,6 @@ class OkapiIndex(BaseIndex):
                 idf = inverse_doc_frequency(len(d2f), N)  # an unscaled float
                 result = self.family.IF.Bucket()
                 print("doc2len items:", list(docid2len.items()))
-                print('res:', type(result), 'd2f', type(_items(d2f)), 'docid2len:', type(docid2len), 'idf:', type(idf), 'meandoclen:', type(meandoclen))
                 score(result, list(d2f.items()), docid2len, int(idf), int(meandoclen))
                 L.append((result, 1))
             return L
