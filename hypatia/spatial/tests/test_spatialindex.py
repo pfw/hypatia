@@ -69,6 +69,11 @@ class SpatialIndexTests(unittest.TestCase):
         self.assertIn(1, index._rev_index)
         self.assertEqual(len(index._tree.search(box(5, 5, 25, 25))), 1)
 
+    def test_index_doc_count(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertEqual(index.docids_count(), 1)
+
     def test_index_doc_existing_same_value(self):
         index: SpatialIndex = self._makeOne()
         index.index_doc(1, box(5, 5, 25, 25))
@@ -86,6 +91,15 @@ class SpatialIndexTests(unittest.TestCase):
         self.assertIn(2, index._rev_index)
         self.assertEqual(len(index._tree.search(box(5, 5, 25, 25))), 2)
 
+    def test_unindex_doc(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertEqual(index.indexed_count(), 1)
+        index.unindex_doc(1)
+        self.assertEqual(index.indexed_count(), 0)
+        self.assertNotIn(1, index._rev_index)
+        self.assertEqual(len(index._tree.search(box(5, 5, 25, 25))), 0)
+
     def test_intersection(self):
         index: SpatialIndex = self._makeOne()
         index.index_doc(1, box(5, 5, 25, 25))
@@ -99,7 +113,7 @@ class SpatialIndexTests(unittest.TestCase):
     def test_bounds(self):
         index: SpatialIndex = self._makeOne()
         index.index_doc(1, box(5, 5, 25, 25))
-        self.assertEqual(index.bounds(), box(5.0, 5.0, 25.0, 25.0))
+        self.assertEqual(index.bounds(), (5.0, 5.0, 25.0, 25.0))
 
     def test_commit(self):
         import ZODB, ZODB.FileStorage, transaction

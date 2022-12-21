@@ -17,6 +17,7 @@ from shapely import prepare
 class BBox:
     key: int
 
+    # TODO - remove the geometry from the tree, just store in the index
     geometry: BaseGeometry = field(compare=False)
 
     min_x: int | float = field(init=False)
@@ -25,6 +26,7 @@ class BBox:
     max_y: int | float = field(init=False)
 
     def __post_init__(self):
+        # TODO - don't take geometry
         self.min_x, self.min_y, self.max_x, self.max_y = self.geometry.bounds
         prepare(self.geometry)
 
@@ -154,8 +156,9 @@ class RBush(Persistent):
 
         return result
 
+    # TODO - take bounds not a a geometry and not exact option
     def search(self, geometry: BaseGeometry, exact=False) -> list[BBox]:
-        prepare(geometry)
+        prepare(geometry)  # TODO - don't prepare
         bbox = BBox(-1, geometry)
 
         node = self.data
@@ -178,6 +181,7 @@ class RBush(Persistent):
                         nodes_to_search.append(child)
             node = nodes_to_search.pop() if nodes_to_search else None
 
+        # TODO - move this to the index so that we don't store the full geometry in the tree
         # intersect the full geometries
         if exact:
             exact_intersects = geometry.intersects([r.geometry for r in result])

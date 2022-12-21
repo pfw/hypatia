@@ -28,7 +28,7 @@ class SpatialIndex(BaseIndexMixin, Persistent):
 
     def __init__(
         self,
-        discriminator,
+        discriminator,  # TODO - add!!
         family=None,
     ):
         if family is not None:
@@ -43,9 +43,9 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         self._num_docs = Length(0)
 
     def document_repr(self, docid, default=None):
-        result = self._rev_index.get(docid, default)
+        result: BBox = self._rev_index.get(docid, default)
         if result is not default:
-            return repr(result.bounds)
+            return repr((result.min_x, result.min_y, result.max_x, result.max_y))
         return default
 
     def indexed(self):
@@ -60,7 +60,7 @@ class SpatialIndex(BaseIndexMixin, Persistent):
             return
         bbox = BBox(docid, geometry)
         self._tree.insert(bbox)
-        self._rev_index[docid] = geometry
+        self._rev_index[docid] = bbox
         # increment doc count
         self._num_docs.change(1)
 
@@ -85,4 +85,4 @@ class SpatialIndex(BaseIndexMixin, Persistent):
 
     def bounds(self):
         node = self._tree.data
-        return box(node.min_x, node.min_y, node.max_x, node.max_y)
+        return node.min_x, node.min_y, node.max_x, node.max_y
