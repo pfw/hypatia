@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-
 import math
 from dataclasses import dataclass, field, asdict
 from operator import attrgetter
@@ -33,6 +31,7 @@ class BBox:
     # TODO - prepare when loaded from ZODB, __setstate__???
 
 
+# TODO - can become a subclass of BBox when geometry is removed
 @dataclass
 class Node:
     children: list[BBox | Node] = field(default_factory=PersistentList)

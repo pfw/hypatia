@@ -109,6 +109,7 @@ setup(name='hypatia',
         'benchmark': ['PyChart'],
         'testing': testing_extras,
         'docs': docs_extras,
+        'spatial': ['shapely'],
         },
       ext_modules=[
           Extension('hypatia.text.okascore',

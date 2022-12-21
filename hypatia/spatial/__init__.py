@@ -1,12 +1,10 @@
 from typing import MutableMapping, MutableSet
 
-import BTrees
 from BTrees.Length import Length
 from persistent import Persistent
-from shapely import box
 from zope.interface import implementer
 
-from hypatia.interfaces import IIndex, IIndexStatistics
+from hypatia.interfaces import IIndex
 from hypatia.spatial.rbush import RBush, BBox
 from hypatia.util import BaseIndexMixin
 
@@ -55,7 +53,10 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         return self._not_indexed
 
     def index_doc(self, docid: int, geometry: BaseGeometry):
-        """Inserts object with bounds into this index. Returns the added item."""
+        """Inserts object with bounds into this index."""
+        # TODO
+        # value = self.discriminate(value, _marker)
+
         if docid in self._rev_index:
             return
         bbox = BBox(docid, geometry)
