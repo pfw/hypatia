@@ -1,14 +1,53 @@
+"""
+A port of https://github.com/mourner/rbush from Javascript. The original
+Javascript is licensed MIT - the code is as straight a port as possible
+with some Python-ism introduced where required.
+
+##############################################################################
+#
+# Copyright (c) 2002 Zope Foundation and Contributors.
+# All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
+
+MIT License
+
+Copyright (c) 2016 Vladimir Agafonkin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, asdict
 from operator import attrgetter
-from typing import Callable, Tuple
+from typing import Callable
 
 from persistent import Persistent
 from persistent.list import PersistentList
-from shapely.geometry.base import BaseGeometry
-from shapely import prepare
 
 
 @dataclass(order=True, eq=True)
@@ -23,7 +62,7 @@ class BBox:
 
 @dataclass
 class Node:
-    children: list[BBox | Node] = field(default_factory=PersistentList)
+    children: PersistentList[BBox | Node] = field(default_factory=PersistentList)
     height: int = field(default=1)
     leaf: bool = field(default=True)
 
@@ -48,7 +87,8 @@ def splice(items, start, end):
 
 
 def intersects(a: BBox | Node, b: BBox | Node) -> bool:
-    # TODO - check for BBox which spans the antimeridian
+    # TODO - How to handle an intersection with a box which spans
+    #  the antimeridian ???
     return (
         b.min_x <= a.max_x
         and b.min_y <= a.max_y
@@ -144,7 +184,6 @@ class RBush(Persistent):
 
         return result
 
-    # TODO - take bounds not a a geometry and not exact option
     def search(
         self, bounds: tuple[int | float, int | float, int | float, int | float]
     ) -> list[BBox]:

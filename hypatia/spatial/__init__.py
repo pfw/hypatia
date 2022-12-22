@@ -33,7 +33,7 @@ class SpatialIndex(BaseIndexMixin, Persistent):
 
     def __init__(
         self,
-        discriminator,  # TODO - add!!
+        discriminator,
         family=None,
     ):
         if family is not None:

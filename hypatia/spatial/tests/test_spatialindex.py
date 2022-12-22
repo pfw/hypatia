@@ -14,12 +14,10 @@
 """Spatial Index Tests
 """
 from __future__ import annotations
-import gzip
 import tempfile
 import unittest
 from dataclasses import dataclass
 
-import shapely
 from shapely import Point, wkt
 from shapely.geometry.base import BaseGeometry
 
