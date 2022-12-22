@@ -1,9 +1,11 @@
-from typing import MutableMapping, MutableSet
+from __future__ import annotations
+from typing import MutableMapping, MutableSet, Any, Sequence
 
 from BTrees.Length import Length
 from persistent import Persistent
 from zope.interface import implementer
 
+from hypatia._compat import string_types
 from hypatia.interfaces import IIndex
 from hypatia.spatial.rbush import RBush, BBox
 from hypatia.util import BaseIndexMixin
@@ -31,6 +33,10 @@ class SpatialIndex(BaseIndexMixin, Persistent):
     ):
         if family is not None:
             self.family = family
+        if not callable(discriminator):
+            if not isinstance(discriminator, string_types):
+                raise ValueError("discriminator value must be callable or a " "string")
+        self.discriminator = discriminator
 
         self.reset()
 
@@ -52,14 +58,26 @@ class SpatialIndex(BaseIndexMixin, Persistent):
     def not_indexed(self):
         return self._not_indexed
 
-    def index_doc(self, docid: int, geometry: BaseGeometry):
+    def index_doc(self, docid: int, value: Any):
         """Inserts object with bounds into this index."""
-        # TODO
-        # value = self.discriminate(value, _marker)
+        value = self.discriminate(value, _marker)
+        if value is _marker:
+            if not (docid in self._not_indexed):
+                # unindex the previous value
+                self.unindex_doc(docid)
+                # Store docid in set of unindexed docids
+                self._not_indexed.add(docid)
+            return None
+
+        if docid in self._not_indexed:
+            # Remove from set of unindexed docs if it was in there.
+            self._not_indexed.remove(docid)
 
         if docid in self._rev_index:
-            return
-        bbox = BBox(docid, geometry)
+            # unindex doc if present
+            self.unindex_doc(docid)
+
+        bbox = BBox(docid, *value)
         self._tree.insert(bbox)
         self._rev_index[docid] = bbox
         # increment doc count
@@ -79,9 +97,12 @@ class SpatialIndex(BaseIndexMixin, Persistent):
     def docids_count(self):
         return len(self._rev_index)
 
-    def intersection(self, coordinates):
+    def intersection(
+        self,
+        bounds: tuple[int | float, int | float, int | float, int | float],
+    ):
         """Returns all docids which are within the given bounds."""
-        for bbox in self._tree.search(coordinates):
+        for bbox in self._tree.search(bounds):
             yield bbox.key
 
     def bounds(self):

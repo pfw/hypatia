@@ -13,7 +13,7 @@ from ..rbush import BBox, RBush, Node
 
 
 def arr_to_bbox(key: int, bounds):
-    return BBox(key=key, geometry=box(*bounds))
+    return BBox(key, *bounds)
 
 
 data = [
@@ -90,7 +90,7 @@ emptyData = [
 def some_data(n):
     data = []
     for i in range(n):
-        data.append(BBox(key=i, geometry=box(i, i, i, i)))
+        data.append(BBox(key=i, min_x=i, min_y=i, max_x=i, max_y=i))
     return data
 
 
@@ -101,8 +101,7 @@ def rand_box(key: int, size: float | int | None = None):
     x = random() * (W - size)
     y = random() * (W - size)
     return BBox(
-        key=key,
-        geometry=box(x, y, x + size * random(), y + size * random()),
+        key=key, min_x=x, min_y=y, max_x=x + size * random(), max_y=y + size * random()
     )
 
 
@@ -193,7 +192,7 @@ class TestRBush(unittest.TestCase):
     def test_search_finds_matching_points_in_the_tree_given_a_bbox(self):
         tree = RBush(4)
         tree.load(data)
-        result = tree.search(box(40, 20, 80, 70))
+        result = tree.search((40, 20, 80, 70))
 
         self.assertCountEqual(
             result,
@@ -219,7 +218,7 @@ class TestRBush(unittest.TestCase):
     def test_search_returns_an_empty_array_if_nothing_found(self):
         tree = RBush(4)
         tree.load(data)
-        result = tree.search(box(200, 200, 210, 210))
+        result = tree.search((200, 200, 210, 210))
         self.assertCountEqual(result, [])
 
     def test_all_returns_all_points_in_the_tree(self):
@@ -228,7 +227,7 @@ class TestRBush(unittest.TestCase):
         tree.load(data)
         self.assertCountEqual(tree.all(), data)
 
-        self.assertCountEqual(tree.search(box(0, 0, 100, 100)), data)
+        self.assertCountEqual(tree.search((0, 0, 100, 100)), data)
 
     def test_insert_adds_an_item_to_an_existing_tree_correctly(self):
         items = [
@@ -316,19 +315,3 @@ class TestRBush(unittest.TestCase):
         tree = RBush()
         tree.load(generate(1000, None))
 
-    def test_search_exact_match(self):
-        p1 = loads(
-            "Polygon ((137.2732412907728019 -30.54331686817956282, 137.33855831083201338 -30.64213711442381083, "
-            "137.48304747641765289 -30.65916489892631702, 137.37616507995704751 -30.60466543578556653, "
-            "137.35043413266100742 -30.5109228180350307, 137.2732412907728019 -30.54331686817956282))"
-        )
-        p2 = loads(
-            "Polygon ((137.39002020542420723 -30.54331686817956282, 137.39595811633864741 -30.59103577486803616, "
-            "137.46325444003605298 -30.6251063315950347, 137.39002020542420723 -30.54331686817956282))"
-        )
-
-        tree = RBush()
-        tree.insert(BBox(1, p1))
-        tree.insert(BBox(2, p2))
-
-        self.assertEqual(len(tree.search(p1, exact=True)), 1)

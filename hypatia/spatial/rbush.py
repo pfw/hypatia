@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field, asdict
 from operator import attrgetter
-from typing import Callable
+from typing import Callable, Tuple
 
 from persistent import Persistent
 from persistent.list import PersistentList
@@ -15,23 +15,12 @@ from shapely import prepare
 class BBox:
     key: int
 
-    # TODO - remove the geometry from the tree, just store in the index
-    geometry: BaseGeometry = field(compare=False)
-
-    min_x: int | float = field(init=False)
-    min_y: int | float = field(init=False)
-    max_x: int | float = field(init=False)
-    max_y: int | float = field(init=False)
-
-    def __post_init__(self):
-        # TODO - don't take geometry
-        self.min_x, self.min_y, self.max_x, self.max_y = self.geometry.bounds
-        prepare(self.geometry)
-
-    # TODO - prepare when loaded from ZODB, __setstate__???
+    min_x: int | float
+    min_y: int | float
+    max_x: int | float
+    max_y: int | float
 
 
-# TODO - can become a subclass of BBox when geometry is removed
 @dataclass
 class Node:
     children: list[BBox | Node] = field(default_factory=PersistentList)
@@ -156,9 +145,10 @@ class RBush(Persistent):
         return result
 
     # TODO - take bounds not a a geometry and not exact option
-    def search(self, geometry: BaseGeometry, exact=False) -> list[BBox]:
-        prepare(geometry)  # TODO - don't prepare
-        bbox = BBox(-1, geometry)
+    def search(
+        self, bounds: tuple[int | float, int | float, int | float, int | float]
+    ) -> list[BBox]:
+        bbox = BBox(-1, *bounds)
 
         node = self.data
         result = []
@@ -180,13 +170,7 @@ class RBush(Persistent):
                         nodes_to_search.append(child)
             node = nodes_to_search.pop() if nodes_to_search else None
 
-        # TODO - move this to the index so that we don't store the full geometry in the tree
-        # intersect the full geometries
-        if exact:
-            exact_intersects = geometry.intersects([r.geometry for r in result])
-            return [r for idx, r in enumerate(result) if exact_intersects[idx]]
-        else:
-            return result
+        return result
 
     def dist_bbox(self, node: Node, k: int, p: int, dest_node: Node | None = None):
         """

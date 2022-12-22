@@ -15,7 +15,7 @@
 """
 import tempfile
 import unittest
-from shapely.geometry import box
+from dataclasses import dataclass
 
 from hypatia.spatial import SpatialIndex
 
@@ -50,10 +50,30 @@ class SpatialIndexTests(unittest.TestCase):
 
         verifyObject(IIndex, self._makeOne())
 
+    def test_ctor_callback_discriminator(self):
+        def _discriminator(obj, default):
+            """ """
+
+        index = self._makeOne(discriminator=_discriminator)
+        self.assertTrue(index.discriminator is _discriminator)
+
+    def test_ctor_string_discriminator(self):
+        index = self._makeOne(discriminator="abc")
+        self.assertEqual(index.discriminator, "abc")
+
+    def test_discriminator(self):
+        @dataclass
+        class Item:
+            bounds: tuple
+
+        index = self._makeOne(discriminator="bounds")
+        index.index_doc(1, Item(bounds=(5, 5, 25, 25)))
+        self.assertEqual(index.document_repr(1), "(5, 5, 25, 25)")
+
     def test_document_repr(self):
         index = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
-        self.assertEqual(index.document_repr(1), "(5.0, 5.0, 25.0, 25.0)")
+        index.index_doc(1, (5, 5, 25, 25))
+        self.assertEqual(index.document_repr(1), "(5, 5, 25, 25)")
         self.assertEqual(index.document_repr(50, True), True)
 
     def test_explicit_family(self):
@@ -64,58 +84,61 @@ class SpatialIndexTests(unittest.TestCase):
 
     def test_index_doc_new(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
+        index.index_doc(1, (5, 5, 25, 25))
         self.assertEqual(index.indexed_count(), 1)
         self.assertIn(1, index._rev_index)
-        self.assertEqual(len(index._tree.search(box(5, 5, 25, 25))), 1)
+        self.assertEqual(len(index._tree.search((5, 5, 25, 25))), 1)
 
     def test_index_doc_count(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
+        index.index_doc(1, (5, 5, 25, 25))
         self.assertEqual(index.docids_count(), 1)
 
     def test_index_doc_existing_same_value(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
-        index.index_doc(1, box(5, 5, 25, 25))
+        index.index_doc(1, (5, 5, 25, 25))
+        index.index_doc(1, (5, 5, 25, 25))
         self.assertEqual(index.indexed_count(), 1)
         self.assertIn(1, index._rev_index)
-        self.assertEqual(len(index._tree.search(box(5, 5, 25, 25))), 1)
+        self.assertEqual(len(index._tree.search((5, 5, 25, 25))), 1)
 
     def test_index_doc_new_same_value(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
-        index.index_doc(2, box(5, 5, 25, 25))
+        index.index_doc(1, (5, 5, 25, 25))
+        index.index_doc(2, (5, 5, 25, 25))
         self.assertEqual(index.indexed_count(), 2)
         self.assertIn(1, index._rev_index)
         self.assertIn(2, index._rev_index)
-        self.assertEqual(len(index._tree.search(box(5, 5, 25, 25))), 2)
+        self.assertEqual(len(index._tree.search((5, 5, 25, 25))), 2)
 
     def test_unindex_doc(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
+        index.index_doc(1, (5, 5, 25, 25))
         self.assertEqual(index.indexed_count(), 1)
         index.unindex_doc(1)
         self.assertEqual(index.indexed_count(), 0)
         self.assertNotIn(1, index._rev_index)
-        self.assertEqual(len(index._tree.search(box(5, 5, 25, 25))), 0)
+        self.assertEqual(len(index._tree.search((5, 5, 25, 25))), 0)
 
     def test_intersection(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
-        self.assertCountEqual(index.intersection(box(0, 0, 100, 100)), [1])
+        index.index_doc(1, (5, 5, 25, 25))
+        self.assertCountEqual(index.intersection((0, 0, 100, 100)), [1])
 
     def test_not_intersection(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
-        self.assertCountEqual(index.intersection(box(100, 100, 200, 200)), [])
+        index.index_doc(1, (5, 5, 25, 25))
+        self.assertCountEqual(index.intersection((100, 100, 200, 200)), [])
 
     def test_bounds(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, box(5, 5, 25, 25))
+        index.index_doc(1, (5, 5, 25, 25))
         self.assertEqual(index.bounds(), (5.0, 5.0, 25.0, 25.0))
 
     def test_commit(self):
+        """
+        Test the tree survives being committed and reopened
+        """
         import ZODB, ZODB.FileStorage, transaction
 
         fs = tempfile.NamedTemporaryFile()
@@ -125,15 +148,20 @@ class SpatialIndexTests(unittest.TestCase):
         connection = db.open()
         root = connection.root
 
-        index: SpatialIndex = self._makeOne()
+        index: SpatialIndex = self._makeOne(discriminator="bounds")
         root.index = index
+
+        @dataclass
+        class Item:
+            bounds: tuple
+
         for i in range(20):
-            index.index_doc(i, box(5, 5, 25, 25))
+            index.index_doc(i, Item(bounds=(5, 5, 25, 25)))
 
         transaction.commit()
-        self.assertEqual(index.document_repr(1), "(5.0, 5.0, 25.0, 25.0)")
+        self.assertEqual(index.document_repr(1), "(5, 5, 25, 25)")
         self.assertCountEqual(
-            index.intersection(box(0, 0, 100, 100)),
+            index.intersection((0, 0, 100, 100)),
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         )
         db.close()
@@ -146,6 +174,6 @@ class SpatialIndexTests(unittest.TestCase):
         root = connection.root
 
         self.assertCountEqual(
-            root.index.intersection(box(0, 0, 100, 100)),
+            root.index.intersection((0, 0, 100, 100)),
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         )
