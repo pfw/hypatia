@@ -1,6 +1,6 @@
 """
 A port of https://github.com/mourner/rbush from Javascript. The original
-Javascript is licensed MIT - the code is as straight a port as possible
+Javascript is licensed MIT - the code is as straightforward a port as possible
 with some Python-ism introduced where required.
 
 ##############################################################################
