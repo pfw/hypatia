@@ -20,11 +20,13 @@ import unittest
 from dataclasses import dataclass
 
 import shapely
-from shapely import Point
+from shapely import Point, wkt
 from shapely.geometry.base import BaseGeometry
 
 from hypatia.spatial import SpatialIndex
 from shapely.geometry import box
+
+from hypatia.spatial.tests.belgium_simple import provinces, geometries
 
 _marker = object()
 
@@ -67,6 +69,9 @@ class SpatialIndexTests(unittest.TestCase):
     def test_ctor_string_discriminator(self):
         index = self._makeOne(discriminator="abc")
         self.assertEqual(index.discriminator, "abc")
+
+    def test_ctor_invalid_discriminator(self):
+        self.assertRaises(ValueError, self._makeOne, discriminator=1)
 
     def test_discriminator(self):
         @dataclass
@@ -118,6 +123,32 @@ class SpatialIndexTests(unittest.TestCase):
         self.assertIn(2, index._rev_index)
         self.assertEqual(len(index._tree.search((5, 5, 25, 25))), 2)
 
+    def test_index_none_value(self):
+        index: SpatialIndex = self._makeOne(discriminator="frogs")
+        index.index_doc(1, {"notfrogs": None})
+        self.assertEqual(index.docids_count(), 0)
+        self.assertCountEqual(index.not_indexed(), [1])
+
+    def test_index_not_geometry(self):
+        index: SpatialIndex = self._makeOne()
+        self.assertRaises(
+            ValueError, index.index_doc, 1, "this thing is not a geometry"
+        )
+
+    def test_index_after_none_value(self):
+        index: SpatialIndex = self._makeOne(discriminator="frogs")
+        index.index_doc(1, {"notfrogs": None})
+        self.assertEqual(index.docids_count(), 0)
+        self.assertCountEqual(index.not_indexed(), [1])
+
+        @dataclass
+        class Item:
+            frogs: BaseGeometry
+
+        index.index_doc(1, Item(box(5, 5, 25, 25)))
+        self.assertEqual(index.docids_count(), 1)
+        self.assertCountEqual(index.not_indexed(), [])
+
     def test_unindex_doc(self):
         index: SpatialIndex = self._makeOne()
         index.index_doc(1, box(5, 5, 25, 25))
@@ -142,11 +173,33 @@ class SpatialIndexTests(unittest.TestCase):
         index.index_doc(1, box(5, 5, 25, 25))
         self.assertEqual(index.bounds(), (5, 5, 25, 25))
 
+    def test_apply_invalid_predicate(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertRaises(ValueError, index.apply, box(0, 0, 100, 100), "notapredicate")
+
     def test_applyIntersects(self):
         index: SpatialIndex = self._makeOne()
         index.index_doc(1, box(5, 5, 25, 25))
         self.assertCountEqual(index.applyIntersects(box(0, 0, 100, 100)), [1])
         self.assertCountEqual(index.applyIntersects(box(0, 0, 100, 100)), [1])
+
+    def test_intersects_execute(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertCountEqual(
+            index.intersects(box(0, 0, 100, 100)).execute().all(), [1]
+        )
+
+    def test_intersects_str(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertTrue(
+            str(index.intersects(box(0, 0, 100, 100))).startswith(
+                "<POLYGON ((100 0, 100 100, 0 100, 0 0, 100 0))> intersects"
+                " <hypatia.spatial.SpatialIndex object at"
+            )
+        )
 
     def test_commit(self):
         """
@@ -195,19 +248,7 @@ class SpatialIndexTests(unittest.TestCase):
         """
         Test with some real world geometries
         """
-        provinces = (
-            "Brussels Capital Region",
-            "Antwerp",
-            "Limburg",
-            "East Flanders",
-            "Flemish Brabant",
-            "West Flanders",
-            "Walloon Brabant",
-            "Hainaut",
-            "Liège",
-            "Luxembourg",
-            "Namur",
-        )
+
         within = (
             ("Antwerp", (4.400278, 51.217778), "Antwerp"),
             ("Ghent", (3.725278, 51.053611), "East Flanders"),
@@ -223,10 +264,8 @@ class SpatialIndexTests(unittest.TestCase):
             geometry: BaseGeometry
 
         index: SpatialIndex = self._makeOne(discriminator="geometry")
-
-        with gzip.open("belgium-simple.geojson.gz") as belgium:
-            for idx, part in enumerate(shapely.from_geojson(belgium.read()).geoms):
-                index.index_doc(idx, Region(provinces[idx], part))
+        for idx, geometry in enumerate(geometries):
+            index.index_doc(idx, Region(provinces[idx], wkt.loads(geometry)))
 
         self.assertEqual(index.indexed_count(), len(provinces))
 
