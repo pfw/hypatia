@@ -13,11 +13,18 @@
 ##############################################################################
 """Spatial Index Tests
 """
+from __future__ import annotations
+import gzip
 import tempfile
 import unittest
 from dataclasses import dataclass
 
+import shapely
+from shapely import Point
+from shapely.geometry.base import BaseGeometry
+
 from hypatia.spatial import SpatialIndex
+from shapely.geometry import box
 
 _marker = object()
 
@@ -64,16 +71,16 @@ class SpatialIndexTests(unittest.TestCase):
     def test_discriminator(self):
         @dataclass
         class Item:
-            bounds: tuple
+            bounds: BaseGeometry
 
         index = self._makeOne(discriminator="bounds")
-        index.index_doc(1, Item(bounds=(5, 5, 25, 25)))
-        self.assertEqual(index.document_repr(1), "(5, 5, 25, 25)")
+        index.index_doc(1, Item(bounds=box(5, 5, 25, 25)))
+        self.assertEqual(index.document_repr(1), "(5.0, 5.0, 25.0, 25.0)")
 
     def test_document_repr(self):
         index = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
-        self.assertEqual(index.document_repr(1), "(5, 5, 25, 25)")
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertEqual(index.document_repr(1), "(5.0, 5.0, 25.0, 25.0)")
         self.assertEqual(index.document_repr(50, True), True)
 
     def test_explicit_family(self):
@@ -84,28 +91,28 @@ class SpatialIndexTests(unittest.TestCase):
 
     def test_index_doc_new(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
+        index.index_doc(1, box(5, 5, 25, 25))
         self.assertEqual(index.indexed_count(), 1)
         self.assertIn(1, index._rev_index)
         self.assertEqual(len(index._tree.search((5, 5, 25, 25))), 1)
 
     def test_index_doc_count(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
+        index.index_doc(1, box(5, 5, 25, 25))
         self.assertEqual(index.docids_count(), 1)
 
     def test_index_doc_existing_same_value(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
-        index.index_doc(1, (5, 5, 25, 25))
+        index.index_doc(1, box(5, 5, 25, 25))
+        index.index_doc(1, box(5, 5, 25, 25))
         self.assertEqual(index.indexed_count(), 1)
         self.assertIn(1, index._rev_index)
         self.assertEqual(len(index._tree.search((5, 5, 25, 25))), 1)
 
     def test_index_doc_new_same_value(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
-        index.index_doc(2, (5, 5, 25, 25))
+        index.index_doc(1, box(5, 5, 25, 25))
+        index.index_doc(2, box(5, 5, 25, 25))
         self.assertEqual(index.indexed_count(), 2)
         self.assertIn(1, index._rev_index)
         self.assertIn(2, index._rev_index)
@@ -113,7 +120,7 @@ class SpatialIndexTests(unittest.TestCase):
 
     def test_unindex_doc(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
+        index.index_doc(1, box(5, 5, 25, 25))
         self.assertEqual(index.indexed_count(), 1)
         index.unindex_doc(1)
         self.assertEqual(index.indexed_count(), 0)
@@ -122,18 +129,24 @@ class SpatialIndexTests(unittest.TestCase):
 
     def test_intersection(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
+        index.index_doc(1, box(5, 5, 25, 25))
         self.assertCountEqual(index.intersection((0, 0, 100, 100)), [1])
 
     def test_not_intersection(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
+        index.index_doc(1, box(5, 5, 25, 25))
         self.assertCountEqual(index.intersection((100, 100, 200, 200)), [])
 
     def test_bounds(self):
         index: SpatialIndex = self._makeOne()
-        index.index_doc(1, (5, 5, 25, 25))
-        self.assertEqual(index.bounds(), (5.0, 5.0, 25.0, 25.0))
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertEqual(index.bounds(), (5, 5, 25, 25))
+
+    def test_applyIntersects(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertCountEqual(index.applyIntersects(box(0, 0, 100, 100)), [1])
+        self.assertCountEqual(index.applyIntersects(box(0, 0, 100, 100)), [1])
 
     def test_commit(self):
         """
@@ -153,13 +166,13 @@ class SpatialIndexTests(unittest.TestCase):
 
         @dataclass
         class Item:
-            bounds: tuple
+            bounds: BaseGeometry
 
         for i in range(20):
-            index.index_doc(i, Item(bounds=(5, 5, 25, 25)))
+            index.index_doc(i, Item(bounds=box(5, 5, 25, 25)))
 
         transaction.commit()
-        self.assertEqual(index.document_repr(1), "(5, 5, 25, 25)")
+        self.assertEqual(index.document_repr(1), "(5.0, 5.0, 25.0, 25.0)")
         self.assertCountEqual(
             index.intersection((0, 0, 100, 100)),
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
@@ -177,3 +190,53 @@ class SpatialIndexTests(unittest.TestCase):
             root.index.intersection((0, 0, 100, 100)),
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         )
+
+    def test_belgium(self):
+        """
+        Test with some real world geometries
+        """
+        provinces = (
+            "Brussels Capital Region",
+            "Antwerp",
+            "Limburg",
+            "East Flanders",
+            "Flemish Brabant",
+            "West Flanders",
+            "Walloon Brabant",
+            "Hainaut",
+            "Liège",
+            "Luxembourg",
+            "Namur",
+        )
+        within = (
+            ("Antwerp", (4.400278, 51.217778), "Antwerp"),
+            ("Ghent", (3.725278, 51.053611), "East Flanders"),
+        )
+
+        # simplified geometries mean the touching provinces are not
+        # all of the ones touching in realty
+        touches = {"Walloon Brabant": ("Liège", "Namur")}
+
+        @dataclass
+        class Region:
+            name: str
+            geometry: BaseGeometry
+
+        index: SpatialIndex = self._makeOne(discriminator="geometry")
+
+        with gzip.open("belgium-simple.geojson.gz") as belgium:
+            for idx, part in enumerate(shapely.from_geojson(belgium.read()).geoms):
+                index.index_doc(idx, Region(provinces[idx], part))
+
+        self.assertEqual(index.indexed_count(), len(provinces))
+
+        for city, coordinates, province in within:
+            self.assertCountEqual(
+                index.apply(Point(*coordinates), "within"), [provinces.index(province)]
+            )
+
+        for province, neighbours in touches.items():
+            self.assertCountEqual(
+                index.apply(index._rev_index.get(provinces.index(province)), "touches"),
+                [provinces.index(province) for province in neighbours],
+            )

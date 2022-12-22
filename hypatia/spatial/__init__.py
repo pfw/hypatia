@@ -5,14 +5,19 @@ from BTrees.Length import Length
 from persistent import Persistent
 from zope.interface import implementer
 
-from hypatia._compat import string_types
-from hypatia.interfaces import IIndex
-from hypatia.spatial.rbush import RBush, BBox
-from hypatia.util import BaseIndexMixin
+from .._compat import string_types
+from ..interfaces import IIndex
+from ..util import BaseIndexMixin
+from ..query import Comparator
+
+from .rbush import RBush, BBox
 
 from shapely.geometry.base import BaseGeometry
+from shapely import prepare, is_prepared
 
 _marker = []
+
+PREDICATES = ("intersects", "overlaps", "within", "touches")
 
 
 @implementer(IIndex)
@@ -47,9 +52,9 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         self._num_docs = Length(0)
 
     def document_repr(self, docid, default=None):
-        result: BBox = self._rev_index.get(docid, default)
+        result: BaseGeometry = self._rev_index.get(docid, default)
         if result is not default:
-            return repr((result.min_x, result.min_y, result.max_x, result.max_y))
+            return repr(result.bounds)
         return default
 
     def indexed(self):
@@ -69,28 +74,34 @@ class SpatialIndex(BaseIndexMixin, Persistent):
                 self._not_indexed.add(docid)
             return None
 
+        if not isinstance(value, BaseGeometry):
+            raise ValueError(f"Value not a geometry: {value}")
+
+        bbox = BBox(docid, *value.bounds)
+
         if docid in self._not_indexed:
             # Remove from set of unindexed docs if it was in there.
             self._not_indexed.remove(docid)
 
         if docid in self._rev_index:
-            # unindex doc if present
+            # unindex doc if present, can be optimised to skip
+            # if the item is unchanged from what is indexed
             self.unindex_doc(docid)
+            self._tree.remove(bbox)
 
-        bbox = BBox(docid, *value)
         self._tree.insert(bbox)
-        self._rev_index[docid] = bbox
+        self._rev_index[docid] = value
         # increment doc count
         self._num_docs.change(1)
 
     def unindex_doc(self, docid):
         """Deletes an item from this index"""
         try:
-            bbox = self._rev_index.pop(docid)
+            geometry = self._rev_index.pop(docid)
         except KeyError:
             # docid was not indexed
             return
-        self._tree.remove(bbox)
+        self._tree.remove(BBox(docid, *geometry.bounds))
         # increment doc count
         self._num_docs.change(-1)
 
@@ -108,3 +119,35 @@ class SpatialIndex(BaseIndexMixin, Persistent):
     def bounds(self):
         node = self._tree.data
         return node.min_x, node.min_y, node.max_x, node.max_y
+
+    def apply(self, geometry: BaseGeometry, predictate="intersects"):
+        results = self._tree.search(geometry.bounds)
+        geometries = []
+        for bbox in self._tree.search(geometry.bounds):
+            geometries.append(self._rev_index[bbox.key])
+            prepare(geometries[-1])
+
+        if predictate not in PREDICATES:
+            raise ValueError(f"Invalid predicate: {predictate}")
+
+        by_predicate = getattr(geometry, predictate)(geometries)
+
+        return self.family.IF.Set(
+            [bbox.key for idx, bbox in enumerate(results) if by_predicate[idx]]
+        )
+
+    def applyIntersects(self, geometry: BaseGeometry):
+        return self.apply(geometry)
+
+    def intersects(self, value: BaseGeometry):
+        return Intersects(self, value)
+
+
+class Intersects(Comparator):
+    """Intersects query."""
+
+    def _apply(self, names):
+        return self.index.applyIntersects(self._get_value(names))
+
+    def __str__(self):
+        return "%r intersects %s" % (self._value, self.index)
