@@ -66,7 +66,7 @@ class SpatialIndex(BaseIndexMixin, Persistent):
     def index_doc(self, docid: int, value: Any):
         """Inserts object with bounds into this index."""
         value = self.discriminate(value, _marker)
-        if value is _marker:
+        if value is _marker or value is None:
             if not (docid in self._not_indexed):
                 # unindex the previous value
                 self.unindex_doc(docid)
@@ -112,7 +112,10 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         self,
         bounds: tuple[int | float, int | float, int | float, int | float],
     ):
-        """Returns all docids which are within the given bounds."""
+        """
+        Returns all docids which are within the given bounds but does NOT
+        perform an exact match on the geometries
+        """
         for bbox in self._tree.search(bounds):
             yield bbox.key
 
@@ -120,17 +123,17 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         node = self._tree.data
         return node.min_x, node.min_y, node.max_x, node.max_y
 
-    def apply(self, geometry: BaseGeometry, predictate="intersects"):
+    def apply(self, geometry: BaseGeometry, predicate="intersects"):
         results = self._tree.search(geometry.bounds)
         geometries = []
         for bbox in self._tree.search(geometry.bounds):
             geometries.append(self._rev_index[bbox.key])
             prepare(geometries[-1])
 
-        if predictate not in PREDICATES:
-            raise ValueError(f"Invalid predicate: {predictate}")
+        if predicate not in PREDICATES:
+            raise ValueError(f"Invalid predicate: {predicate}")
 
-        by_predicate = getattr(geometry, predictate)(geometries)
+        by_predicate = getattr(geometry, predicate)(geometries)
 
         return self.family.IF.Set(
             [bbox.key for idx, bbox in enumerate(results) if by_predicate[idx]]
