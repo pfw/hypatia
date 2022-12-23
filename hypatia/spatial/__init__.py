@@ -127,6 +127,7 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         return node.min_x, node.min_y, node.max_x, node.max_y
 
     def apply(self, geometry: BaseGeometry, predicate="intersects"):
+        prepare(geometry) # prepare the search geometry
         results = []
         geometries = []
         for bbox in self._tree.search(geometry.bounds):
