@@ -63,6 +63,9 @@ class SpatialIndex(BaseIndexMixin, Persistent):
     def not_indexed(self):
         return self._not_indexed
 
+    def indexed_count(self):
+        return self._num_docs.value
+
     def index_doc(self, docid: int, value: Any):
         """Inserts object with bounds into this index."""
         value = self.discriminate(value, _marker)
@@ -124,9 +127,10 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         return node.min_x, node.min_y, node.max_x, node.max_y
 
     def apply(self, geometry: BaseGeometry, predicate="intersects"):
-        results = self._tree.search(geometry.bounds)
+        results = []
         geometries = []
         for bbox in self._tree.search(geometry.bounds):
+            results.append(bbox)
             geometries.append(self._rev_index[bbox.key])
             prepare(geometries[-1])
 
