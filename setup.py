@@ -69,8 +69,8 @@ install_requires = [
     'ZODB>=4.0.0b2', # py3 compat
     'zope.interface',
     ]
-
-testing_extras = ['pytest', 'coverage']
+spatial_extras = ['shapely>=2.0.0']
+testing_extras = ['pytest', 'coverage'] + spatial_extras
 
 docs_extras = [
     'Sphinx >= 3.0.0',  # Force RTD to use >= 3.0.0
@@ -109,7 +109,7 @@ setup(name='hypatia',
         'benchmark': ['PyChart'],
         'testing': testing_extras,
         'docs': docs_extras,
-        'spatial': ['shapely'],
+        'spatial': spatial_extras,
         },
       ext_modules=[
           Extension('hypatia.text.okascore',
