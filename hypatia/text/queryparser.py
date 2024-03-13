@@ -192,7 +192,7 @@ class QueryParser(object):
                     continue # Only stopwords
                 Nots.append(parsetree.NotNode(t))
             else:
-                break
+                break  # pragma: no cover
         if not L:
             return None # Only stopwords
         L.extend(Nots)

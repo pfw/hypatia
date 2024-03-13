@@ -383,8 +383,7 @@ class RBush(Persistent):
                 self._split(insert_path, level)
                 level -= 1
             else:
-                no_peephole_opt = None  # a bare break isn't found by coverage
-                break
+                break  # pragma: no cover
 
         # adjust bboxes along the insertion path
         self._adjust_parent_bboxes(item, insert_path, level)

@@ -80,6 +80,15 @@ class SpatialIndexTests(unittest.TestCase):
         index.index_doc(1, Item(bounds=box(5, 5, 25, 25)))
         self.assertEqual(index.document_repr(1), "(5.0, 5.0, 25.0, 25.0)")
 
+    def test_index_doc_value_is_marker(self):
+        index = self._makeOne()
+        # this should never be raised
+        index.unindex_doc = lambda *arg, **kw: 0/1
+        index.index_doc(1, _marker)
+        self.assertTrue(1 in index._not_indexed)
+        index.index_doc(1, _marker)
+        self.assertTrue(1 in index._not_indexed)
+
     def test_document_repr(self):
         index = self._makeOne()
         index.index_doc(1, box(5, 5, 25, 25))
@@ -103,6 +112,13 @@ class SpatialIndexTests(unittest.TestCase):
         index: SpatialIndex = self._makeOne()
         index.index_doc(1, box(5, 5, 25, 25))
         self.assertEqual(index.docids_count(), 1)
+
+    def test_index_indexed(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        index.index_doc(2, box(6, 6, 26, 26))
+        self.assertEqual(set(index.indexed()), {1, 2})
+
 
     def test_index_doc_existing_same_value(self):
         index: SpatialIndex = self._makeOne()

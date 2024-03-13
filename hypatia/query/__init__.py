@@ -782,18 +782,12 @@ class _AstParser(object):
         dotted_name.id = '.'.join((name.id, node.attr))
         return dotted_name
 
-    def process_Str(self, node, children):
-        return node.s
-
     def process_Constant(self, node, children):
         """
         Changed in Python version 3.8: Class ast.Constant is now used for all constants.
         Default coverage is run under 3.7 so don't count this line.
         """
         return node.s   # pragma NO COVER
-
-    def process_Num(self, node, children):
-        return node.n
 
     def process_List(self, node, children):
         l = list(children[:-1])
