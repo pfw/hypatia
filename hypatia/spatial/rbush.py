@@ -651,10 +651,6 @@ def quickselect(arr, k, left, right, getval):
             right = j - 1
 
 
-def compare_dist(a, b):
-    return a.dist - b.dist
-
-
 def box_dist(x, y, box):
     dx = axis_dist(x, box.min_x, box.max_x)
     dy = axis_dist(y, box.min_y, box.max_y)
