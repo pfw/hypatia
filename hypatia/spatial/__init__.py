@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import MutableMapping, MutableSet, Any, Sequence
+from typing import MutableMapping, MutableSet, Any, Sequence, Optional
 
 from BTrees.Length import Length
 from persistent import Persistent
@@ -122,12 +122,24 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         for bbox in self._tree.search(bounds):
             yield bbox.key
 
+    def knn(
+        self,
+        point: tuple[int | float, int | float],
+        count: Optional[int] = None,
+        max_distance: Optional[float] = None,
+    ):
+        """
+        Returns the nearest docis within max_distance of the given point, not more than count docids.
+        """
+        for dist, bbox in self._tree.knn(point, count, max_distance):
+            yield dist, bbox.key
+
     def bounds(self):
         node = self._tree.data
         return node.min_x, node.min_y, node.max_x, node.max_y
 
     def apply(self, geometry: BaseGeometry, predicate="intersects"):
-        prepare(geometry) # prepare the search geometry
+        prepare(geometry)  # prepare the search geometry
         results = []
         geometries = []
         for bbox in self._tree.search(geometry.bounds):

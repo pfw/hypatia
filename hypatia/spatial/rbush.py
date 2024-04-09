@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 """
-A port of https://github.com/mourner/rbush from Javascript. The original
-Javascript is licensed MIT - the code is as straightforward a port as possible
-with some Python-ism introduced where required.
+A port of https://github.com/mourner/rbush and https://github.com/mourner/rbush-knn
+from Javascript. The original Javascript is licensed MIT - the code is as
+straightforward a port as possible with some Python-ism introduced where required.
 
 ##############################################################################
 #
@@ -39,12 +41,29 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-from __future__ import annotations
 
+"""
+Copyright (c) 2016, Vladimir Agafonkin
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+"""
+
+
+import heapq
 import math
 from dataclasses import dataclass, field, asdict
 from operator import attrgetter
-from typing import Callable
+from typing import Callable, Optional
 
 from persistent import Persistent
 from persistent.list import PersistentList
@@ -58,6 +77,9 @@ class BBox:
     min_y: int | float
     max_x: int | float
     max_y: int | float
+
+    def bounds(self) -> tuple[int, int, int, int]:
+        return [self.min_x, self.min_y, self.max_x, self.max_y]
 
 
 @dataclass
@@ -288,7 +310,6 @@ class RBush(Persistent):
             margin += bbox_margin(left_bbox)
 
         for i in range(M - m - 1, m - 1, -1):
-
             child = node.children[i]
             extend(right_bbox, child)
             margin += bbox_margin(right_bbox)
@@ -535,6 +556,40 @@ class RBush(Persistent):
         """
         return asdict(self.data)
 
+    def knn(
+        self,
+        point: tuple[int | float, int | float],
+        count: Optional[int] = None,
+        max_distance: Optional[float] = None,
+    ):
+
+        # depth first search and calc distance
+        node = self.data
+        result = []
+
+        queue = []
+        idx = 0
+        while node:
+            for child in node.children if isinstance(node, Node) else []:
+                # find the distance from the current child to the source
+                dist = box_dist(*point, child)
+                if not max_distance or dist <= max_distance * max_distance:
+                    idx += 1
+                    heapq.heappush(queue, (dist, idx, child))
+            while queue and isinstance(queue[0][2], BBox):
+                result.append(heapq.heappop(queue))
+                if count and len(result) == count or not queue:
+                    return [(r[0], r[2]) for r in result]
+
+            if queue:
+                node = heapq.heappop(queue)
+                if node:
+                    node = node[2]
+            else:
+                node = None
+
+        return [(r[0], r[2]) for r in result]
+
 
 import math
 
@@ -594,3 +649,18 @@ def quickselect(arr, k, left, right, getval):
             left = j + 1
         if k <= j:
             right = j - 1
+
+
+def compare_dist(a, b):
+    return a.dist - b.dist
+
+
+def box_dist(x, y, box):
+    dx = axis_dist(x, box.min_x, box.max_x)
+    dy = axis_dist(y, box.min_y, box.max_y)
+
+    return dx * dx + dy * dy
+
+
+def axis_dist(k, min, max):
+    return min - k if k < min else 0 if k <= max else k - max
