@@ -13,7 +13,7 @@ from ..query import Comparator
 from .rbush import RBush, BBox
 
 from shapely.geometry.base import BaseGeometry
-from shapely import prepare, is_prepared
+from shapely import prepare, is_prepared, Point
 
 _marker = []
 
@@ -162,6 +162,27 @@ class SpatialIndex(BaseIndexMixin, Persistent):
     def intersects(self, value: BaseGeometry):
         return Intersects(self, value)
 
+    def applyNear(
+        self,
+        point: Point,
+        count: Optional[int] = None,
+        max_distance: Optional[float | int] = None,
+    ):
+        return self.family.IF.Set(
+            [
+                bbox.key
+                for dist, bbox in self._tree.knn((point.x, point.y), count, max_distance)
+            ]
+        )
+
+    def near(
+        self,
+        point: Point,
+        count: Optional[int] = None,
+        max_distance: Optional[float] = None,
+    ):
+        return Near(self, point, count, max_distance)
+
 
 class Intersects(Comparator):
     """Intersects query."""
@@ -171,3 +192,24 @@ class Intersects(Comparator):
 
     def __str__(self):
         return "%r intersects %s" % (self._value, self.index)
+
+
+class Near(Comparator):
+
+    def __init__(self, index, value, count, max_distance):
+        super().__init__(index, value)
+        self.count = count
+        self.max_distance = max_distance
+
+    def _apply(self, names):
+        return self.index.applyNear(
+            self._get_value(names), count=self.count, max_distance=self.max_distance
+        )
+
+    def __str__(self):
+        return "%r near %s, count=%d, max_distance=%f" % (
+            self._value,
+            self.index,
+            self.count,
+            self.max_distance,
+        )
