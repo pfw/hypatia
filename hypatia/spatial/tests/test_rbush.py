@@ -509,6 +509,7 @@ class TestRBushKNN(unittest.TestCase):
         tree.load(pyth_data)
         result = tree.knn((0, 0), 1000, 12.6)
         self.assertEqual([list(r[1].bounds()) for r in result], [[0, 0, 0, 0]])
+
     def test_verify_max_distance_includes_all_items_within_range(self):
         """
         in order to adhere to pythagoras theorem a^2+b^2=c^2
@@ -516,4 +517,6 @@ class TestRBushKNN(unittest.TestCase):
         tree = RBush()
         tree.load(pyth_data)
         result = tree.knn((0, 0), 1000, 12.8)
-        self.assertEqual([list(r[1].bounds()) for r in result], [[0,0,0,0],[9,9,9,9]])
+        self.assertEqual(
+            [list(r[1].bounds()) for r in result], [[0, 0, 0, 0], [9, 9, 9, 9]]
+        )
