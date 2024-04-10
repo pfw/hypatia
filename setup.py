@@ -70,7 +70,7 @@ install_requires = [
     'zope.interface',
     ]
 spatial_extras = ['shapely>=2.0.0']
-testing_extras = ['pytest', 'coverage'] + spatial_extras
+testing_extras = ['pytest', 'coverage']
 
 docs_extras = [
     'Sphinx >= 3.0.0',  # Force RTD to use >= 3.0.0
@@ -92,6 +92,8 @@ setup(name='hypatia',
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
         ],

@@ -14,17 +14,22 @@
 """Spatial Index Tests
 """
 from __future__ import annotations
+
+import re
 import tempfile
 import unittest
 from dataclasses import dataclass
+from types import GeneratorType
 
 from shapely import Point, wkt
 from shapely.geometry.base import BaseGeometry
 
+from hypatia.field import FieldIndex
 from hypatia.spatial import SpatialIndex
 from shapely.geometry import box
 
 from hypatia.spatial.tests.belgium_simple import provinces, geometries
+from hypatia.util import ResultSet
 
 _marker = object()
 
@@ -83,7 +88,7 @@ class SpatialIndexTests(unittest.TestCase):
     def test_index_doc_value_is_marker(self):
         index = self._makeOne()
         # this should never be raised
-        index.unindex_doc = lambda *arg, **kw: 0/1
+        index.unindex_doc = lambda *arg, **kw: 0 / 1
         index.index_doc(1, _marker)
         self.assertTrue(1 in index._not_indexed)
         index.index_doc(1, _marker)
@@ -118,7 +123,6 @@ class SpatialIndexTests(unittest.TestCase):
         index.index_doc(1, box(5, 5, 25, 25))
         index.index_doc(2, box(6, 6, 26, 26))
         self.assertEqual(set(index.indexed()), {1, 2})
-
 
     def test_index_doc_existing_same_value(self):
         index: SpatialIndex = self._makeOne()
@@ -212,6 +216,136 @@ class SpatialIndexTests(unittest.TestCase):
             str(index.intersects(box(0, 0, 100, 100))).startswith(
                 "<POLYGON ((100 0, 100 100, 0 100, 0 0, 100 0))> intersects"
                 " <hypatia.spatial.SpatialIndex object at"
+            )
+        )
+
+    def test_knn(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(0, 0, 0, 0))
+        index.index_doc(2, box(9, 9, 9, 9))
+        index.index_doc(3, box(12, 12, 12, 12))
+        index.index_doc(4, box(13, 14, 19, 11))
+
+        res = index.knn(Point(0, 0), count=1000, max_distance=12.6)
+        self.assertIsInstance(res, GeneratorType)
+        self.assertEqual(next(res), (0, 1))
+
+    def test_applyNear(self):
+
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(0, 0, 0, 0))
+        index.index_doc(2, box(9, 9, 9, 9))
+        index.index_doc(3, box(12, 12, 12, 12))
+        index.index_doc(4, box(13, 14, 19, 11))
+
+        res = index.applyNear(Point(0, 0), count=1000, max_distance=12.6)
+
+        self.assertIsInstance(res, index.family.IF.Set)
+
+        self.assertListEqual(list(res), [1])
+
+    def test_near_execute(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(0, 0, 0, 0))
+        index.index_doc(2, box(9, 9, 9, 9))
+        index.index_doc(3, box(12, 12, 12, 12))
+        index.index_doc(4, box(13, 14, 19, 11))
+
+        res = index.near(Point(0, 0), count=1000, max_distance=12.6).execute()
+
+        self.assertIsInstance(res, ResultSet)
+
+        self.assertListEqual(list(res), [1])
+
+    def test_knn_index_resultset(self):
+        """
+        Search and sort on a knn index, no other indexes in query
+        """
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(0, 0, 0, 0))
+        index.index_doc(2, box(13, 14, 19, 11))
+        index.index_doc(3, box(9, 9, 9, 9))
+        index.index_doc(4, box(12, 12, 12, 12))
+
+        near_args = (Point(0, 0), 1000)
+
+        doc_ids, sort_index = index.knn_index(*near_args)
+        self.assertIsInstance(doc_ids, index.family.IF.Set)
+        self.assertIsInstance(sort_index, FieldIndex)
+
+        self.assertEqual(len(doc_ids), 4)
+
+        res = ResultSet(doc_ids, numids=len(doc_ids), resolver=None).sort(sort_index)
+        self.assertListEqual(list(res.all()), [1, 3, 4, 2])
+
+    def test_knn_index_execute(self):
+        """
+        Add knn search to a query against other indexes and sort by the distance to items
+        found via knn.
+        """
+        @dataclass
+        class Thing:
+            docid: int
+            geometry: BaseGeometry
+            age: int
+
+        things = [
+            Thing(1, geometry=box(0, 0, 0, 0), age=10),
+            Thing(2, geometry=box(13, 14, 19, 11), age=8),
+            Thing(3, geometry=box(9, 9, 9, 9), age=7),
+            Thing(4, geometry=box(12, 12, 12, 12), age=8),
+        ]
+
+        geometry: SpatialIndex = SpatialIndex("geometry")
+        age: FieldIndex = FieldIndex("age")
+        for thing in things:
+            geometry.index_doc(thing.docid, thing)
+            age.index_doc(thing.docid, thing)
+
+        doc_ids, sort_index = geometry.knn_index(Point(0, 0), 1000)
+
+        res = age.eq(8).execute().intersect(doc_ids).sort(sort_index)
+        self.assertListEqual(list(res.all()), [4, 2])
+
+    def test_near_str(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertTrue(
+            re.match(
+                r"<POINT \(0 100\)> near <hypatia.spatial.SpatialIndex object at 0x[0-9a-f]+>",
+                str(index.near(Point(0, 100))),
+            )
+        )
+
+    def test_near_str_with_count(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        self.assertTrue(
+            re.match(
+                r"<POINT \(0 100\)> near <hypatia.spatial.SpatialIndex object at 0x[0-9a-f]+>, count=10",
+                str(index.near(Point(0, 100), count=10)),
+            )
+        )
+
+    def test_near_str_with_max_distance(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        print(index.near(Point(0, 100), max_distance=5))
+        self.assertTrue(
+            re.match(
+                r"<POINT \(0 100\)> near <hypatia.spatial.SpatialIndex object at 0x[0-9a-f]+>, max_distance=5\.000000",
+                str(index.near(Point(0, 100), max_distance=5)),
+            )
+        )
+
+    def test_near_str_with_count_and_max_distance(self):
+        index: SpatialIndex = self._makeOne()
+        index.index_doc(1, box(5, 5, 25, 25))
+        print(index.near(Point(0, 100), max_distance=5))
+        self.assertTrue(
+            re.match(
+                r"<POINT \(0 100\)> near <hypatia.spatial.SpatialIndex object at 0x[0-9a-f]+>, count=10, max_distance=5\.000000",
+                str(index.near(Point(0, 100), count=10, max_distance=5)),
             )
         )
 

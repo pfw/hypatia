@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import MutableMapping, MutableSet, Any, Sequence, Optional
+from typing import MutableMapping, MutableSet, Any, Sequence, Optional, Iterable
 
 from BTrees.Length import Length
 from persistent import Persistent
@@ -127,14 +128,14 @@ class SpatialIndex(BaseIndexMixin, Persistent):
 
     def knn(
         self,
-        point: tuple[int | float, int | float],
+        point: Point,
         count: Optional[int] = None,
         max_distance: Optional[float] = None,
-    ):
+    ) -> Iterable[tuple[int, int]]:
         """
-        Returns the nearest docis within max_distance of the given point, not more than count docids.
+        Returns the nearest items within max_distance of the given point, not more than count docids.
         """
-        for dist, bbox in self._tree.knn(point, count, max_distance):
+        for dist, bbox in self._tree.knn((point.x, point.y), count, max_distance):
             yield dist, bbox.key
 
     @dataclass
@@ -143,25 +144,33 @@ class SpatialIndex(BaseIndexMixin, Persistent):
 
     def knn_index(
         self,
-        point: tuple[int | float, int | float],
+        point: Point,
         count: Optional[int] = None,
         max_distance: Optional[float] = None,
-    ):
+    ) -> tuple[set[int], FieldIndex]:
         """
         Return ids and an index for sorting by distance.
 
-        eg.
-        doc_ids, sort_index = root.index.knn_index((149.05209129629245,-35.36327793337446), count=15)
-        rs = ResultSet(ids=doc_ids, numids=len(doc_ids), resolver=root.geonames.get).sort(sort_index)
+        doc_ids, sort_index = root.index.knn_index(Point(149.05209129629245,-35.36327793337446), count=15)
 
-        OR
+        If there is only a query via distance then create a Result object with the result
+        of a call to knn_index, eg:
 
-        rs.intersect(doc_ids)
+        rs = ResultSet(ids=doc_ids, numids=len(doc_ids), resolver=None).sort(sort_index)
+
+
+        If there is an existing ResultSet from a call to .execute() then intersect the doc_ids and sort, eg:
+
+        rs.intersect(doc_ids).sort(sort_index)
+
+        This can be done in a query with other indexes,eg
+
+        other_index.eq(12).intersect(doc_ids).sort(sort_index)
 
         """
         sort_index = FieldIndex("distance")
         doc_ids = self.family.IF.Set()
-        for dist, bbox in self._tree.knn(point, count, max_distance):
+        for dist, bbox in self._tree.knn((point.x, point.y), count, max_distance):
             doc_ids.add(bbox.key)
             sort_index.index_doc(bbox.key, self.ByDistance(dist))
         return doc_ids, sort_index
@@ -241,9 +250,9 @@ class Near(Comparator):
         )
 
     def __str__(self):
-        return "%r near %s, count=%d, max_distance=%f" % (
+        return "%r near %s%s%s" % (
             self._value,
             self.index,
-            self.count,
-            self.max_distance,
+            ", count=%d" % self.count if self.count else "",
+            ", max_distance=%f" % self.max_distance if self.max_distance else "",
         )
