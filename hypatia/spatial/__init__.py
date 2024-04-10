@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from dataclasses import dataclass
 from typing import MutableMapping, MutableSet, Any, Sequence, Optional
 
 from BTrees.Length import Length
@@ -6,6 +8,7 @@ from persistent import Persistent
 from zope.interface import implementer
 
 from .._compat import string_types
+from ..field import FieldIndex
 from ..interfaces import IIndex
 from ..util import BaseIndexMixin
 from ..query import Comparator
@@ -134,6 +137,35 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         for dist, bbox in self._tree.knn(point, count, max_distance):
             yield dist, bbox.key
 
+    @dataclass
+    class ByDistance:
+        distance: float
+
+    def knn_index(
+        self,
+        point: tuple[int | float, int | float],
+        count: Optional[int] = None,
+        max_distance: Optional[float] = None,
+    ):
+        """
+        Return ids and an index for sorting by distance.
+
+        eg.
+        doc_ids, sort_index = root.index.knn_index((149.05209129629245,-35.36327793337446), count=15)
+        rs = ResultSet(ids=doc_ids, numids=len(doc_ids), resolver=root.geonames.get).sort(sort_index)
+
+        OR
+
+        rs.intersect(doc_ids)
+
+        """
+        sort_index = FieldIndex("distance")
+        doc_ids = self.family.IF.Set()
+        for dist, bbox in self._tree.knn(point, count, max_distance):
+            doc_ids.add(bbox.key)
+            sort_index.index_doc(bbox.key, self.ByDistance(dist))
+        return doc_ids, sort_index
+
     def bounds(self):
         node = self._tree.data
         return node.min_x, node.min_y, node.max_x, node.max_y
@@ -171,7 +203,9 @@ class SpatialIndex(BaseIndexMixin, Persistent):
         return self.family.IF.Set(
             [
                 bbox.key
-                for dist, bbox in self._tree.knn((point.x, point.y), count, max_distance)
+                for dist, bbox in self._tree.knn(
+                    (point.x, point.y), count, max_distance
+                )
             ]
         )
 
